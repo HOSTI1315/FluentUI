@@ -1,174 +1,191 @@
-# FluentPlus
+# FluentUI / FluentPlus
 
-Roblox executor UI library (Luau): extended [Fluent](https://github.com/dawid-scripts/Fluent) with multi-column layout, horizontal button rows, optional key gate, status bar (FPS/Ping), and a forked SaveManager with autosave. Official Fluent docs (base API): [Fluent documentation](https://forgenet.gitbook.io/fluent-documentation).
+Roblox **executor** UI library (Luau): Fluent-style windows with FluentPlus extras—multi-column rows, horizontal button rows, optional key gate, status bar (FPS/ping), and a forked **SaveManager** with autosave.
+
+> **Scope:** This runs in third-party executors (HTTP + optional `writefile`/`readfile`). It is **not** a Roblox Studio plugin.
+
+**Repository layout**
+
+| Path | Purpose |
+|------|---------|
+| [`FluentPlus/Beta.lua`](FluentPlus/Beta.lua) | **Main build** — load this in production (monolithic library). |
+| [`FluentPlus/Example.lua`](FluentPlus/Example.lua) | Full sample: window, toggles, SaveManager, InterfaceManager, columns, button rows. |
+| [`Addons/SaveManager.lua`](Addons/SaveManager.lua) | Persistence UI + autosave (forked). |
+| [`Addons/InterfaceManager.lua`](Addons/InterfaceManager.lua) | Theme / acrylic / menu keybind UI. |
+| [`Fluent/`](Fluent/) | Modular upstream-style sources (Rojo); reference for contributors. |
+
+Base Fluent patterns (tabs, sections, Lucide icons) align with upstream [Fluent documentation](https://docs.sirius.menu/fluent); FluentPlus-specific behavior is defined in `Beta.lua`.
 
 ---
 
-## For AI assistants (read first)
+## Requirements
 
-Use this section as **grounding** when generating or refactoring hub scripts for this repository.
+- Executor with **`game:HttpGet`** (or equivalent) to fetch `Beta.lua`.
+- For **SaveManager** / **InterfaceManager** file configs: **`writefile`**, `readfile`, `isfile`, `isfolder`, `makefolder`, `listfiles` (executor file API).
 
-### Facts
+---
 
-| Item | Value |
-|------|--------|
-| Domain | Roblox client; Luau; third-party **executor** with HTTP + file APIs |
-| Primary ship file | [`FluentPlus/Beta.lua`](FluentPlus/Beta.lua) (monolithic library) |
-| HTTP addons (same URL pattern as upstream Fluent) | [`Addons/SaveManager.lua`](Addons/SaveManager.lua), [`Addons/InterfaceManager.lua`](Addons/InterfaceManager.lua) |
-| Reference implementation | [`FluentPlus/Example.lua`](FluentPlus/Example.lua) |
-| Release URL pattern | GitHub Release asset `main.lua` = copy of `Beta.lua` (workflow: [`.github/workflows/release-fluentplus.yml`](.github/workflows/release-fluentplus.yml)) |
-| `Beta.lua` return | `return Library, SaveManager, InterfaceManager, Mobile` — you may assign four return values from one `loadstring` call |
+## Installation
 
-### Rules (do not violate)
+### Option A — One load (recommended)
 
-1. **`CreateKeySystem` before `CreateWindow`** — Key UI blocks until success; window must not exist yet.
-2. **One window per session** — Second `CreateWindow` is rejected (library behavior).
-3. **SaveManager** needs executor FS: `writefile`, `readfile`, `isfile`, `isfolder`, `makefolder`, `listfiles`.
-4. **Autosave** — Installed automatically at end of `SaveManager:BuildConfigSection` (no extra enable call). Disable with `SaveManager:SetAutosaveEnabled(false)`.
-5. **Options table** — `Fluent.Options` holds named controls; indexes must match SaveManager save keys when using configs.
-
-### Suggested script skeleton
+`Beta.lua` returns **four values**: `Library`, `SaveManager`, `InterfaceManager`, `Mobile`.
 
 ```lua
-local REPO = "https://raw.githubusercontent.com/OWNER/REPO/main"
-local Fluent = loadstring(game:HttpGet(REPO .. "/FluentPlus/Beta.lua"))()
-local SaveManager = loadstring(game:HttpGet(REPO .. "/Addons/SaveManager.lua"))()
-local InterfaceManager = loadstring(game:HttpGet(REPO .. "/Addons/InterfaceManager.lua"))()
+local REPO = "https://raw.githubusercontent.com/HOSTI1315/FluentUI/main"
 
--- Optional, before window:
--- Fluent:CreateKeySystem({ Title = "...", Key = "...", SaveKey = true, FolderName = "HubName" })
+local Fluent, SaveManager, InterfaceManager, Mobile =
+	loadstring(game:HttpGet(REPO .. "/FluentPlus/Beta.lua", true))()
 
-local Window = Fluent:CreateWindow({ Title = "...", Size = UDim2.fromOffset(580, 460), Theme = "Dark" })
--- Optional: Fluent:CreateStatusBar({ FPS = true, Ping = true })
+-- Fluent = main UI library; use SaveManager / InterfaceManager below.
+```
 
-local Tab = Window:AddTab({ Title = "Main", Icon = "home" })
-local Section = Tab:AddSection("Features", "zap") -- icon: Lucide name without lucide- prefix
+> Confirm the `return` line at the end of your checked-out `Beta.lua` if you fork the repo—**this README is accurate for the `main` branch as shipped.**
+
+### Option B — Three separate HTTP loads
+
+Use this only if you use an older split layout or non-bundled build:
+
+```lua
+local REPO = "https://raw.githubusercontent.com/HOSTI1315/FluentUI/main"
+
+local Fluent = loadstring(game:HttpGet(REPO .. "/FluentPlus/Beta.lua", true))()
+local SaveManager = loadstring(game:HttpGet(REPO .. "/Addons/SaveManager.lua", true))()
+local InterfaceManager = loadstring(game:HttpGet(REPO .. "/Addons/InterfaceManager.lua", true))()
+```
+
+Avoid mixing **Option A** and **Option B** for the same session (double-initializing managers can cause confusing errors).
+
+### Releases
+
+If you publish GitHub **Releases** with `main.lua` (see [`.github/workflows/release-fluentplus.yml`](.github/workflows/release-fluentplus.yml)), consumers can use:
+
+```lua
+local Fluent = loadstring(game:HttpGet("https://github.com/HOSTI1315/FluentUI/releases/latest/download/main.lua", true))()
+```
+
+Adjust org/repo in the URL when you fork.
+
+---
+
+## Minimal script
+
+```lua
+local Fluent, SaveManager, InterfaceManager =
+	loadstring(game:HttpGet(
+		"https://raw.githubusercontent.com/HOSTI1315/FluentUI/main/FluentPlus/Beta.lua",
+		true
+	))()
+
+local Window = Fluent:CreateWindow({
+	Title = "My Hub",
+	Size = UDim2.fromOffset(580, 460),
+	Theme = "Dark",
+})
+
+local Main = Window:AddTab({ Title = "Main", Icon = "home" })
+local Section = Main:AddSection("Features", "zap")
+
+Section:AddToggle("MyToggle", { Title = "Enable feature", Default = false })
+
+local Settings = Window:AddTab({ Title = "Settings", Icon = "settings" })
 
 SaveManager:SetLibrary(Fluent)
 InterfaceManager:SetLibrary(Fluent)
 SaveManager:IgnoreThemeSettings()
-InterfaceManager:SetFolder("GlobalFolder")
-SaveManager:SetFolder("GlobalFolder/game-id")
-InterfaceManager:BuildInterfaceSection(SettingsTab)
-SaveManager:BuildConfigSection(SettingsTab)
-SaveManager:LoadAutoloadConfig()
+InterfaceManager:SetFolder("MyHub")
+SaveManager:SetFolder("MyHub/my-game-id")
+InterfaceManager:BuildInterfaceSection(Settings)
+SaveManager:BuildConfigSection(Settings)
+
+Window:SelectTab(1)
+
+pcall(function()
+	SaveManager:LoadAutoloadConfig()
+end)
 ```
+
+For **key system**, **status bar**, **columns (`AddRow`)**, and **`AddButtonRow`**, copy patterns from [`FluentPlus/Example.lua`](FluentPlus/Example.lua).
 
 ---
 
-## Quick start (three HTTP loads)
+## Rules (do not violate)
 
-Replace `YOUR_ORG` / `YOUR_REPO` / branch `main` as needed.
-
-```lua
-local Fluent = loadstring(game:HttpGet("https://github.com/YOUR_ORG/YOUR_REPO/releases/latest/download/main.lua"))()
-local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/YOUR_ORG/YOUR_REPO/main/Addons/SaveManager.lua"))()
-local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/YOUR_ORG/YOUR_REPO/main/Addons/InterfaceManager.lua"))()
-```
-
-**Without Releases** (raw `Beta.lua`):
-
-```lua
-local Fluent = loadstring(game:HttpGet("https://raw.githubusercontent.com/YOUR_ORG/YOUR_REPO/main/FluentPlus/Beta.lua"))()
-```
-
-**Single loadstring (four returns)** — `Beta.lua` embeds SaveManager/InterfaceManager; you can skip separate addon URLs if you destructure returns (verify behavior matches your fork):
-
-```lua
-local Fluent, SaveManager, InterfaceManager, Mobile = loadstring(game:HttpGet(".../Beta.lua"))()
-```
+1. **`CreateKeySystem` before `CreateWindow`** — The key modal blocks until success; the main window must not exist yet.
+2. **One window per session** — A second `CreateWindow` call is rejected by the library.
+3. **SaveManager** needs the executor file APIs listed above.
+4. **Autosave** hooks are installed when you call `SaveManager:BuildConfigSection`. Disable with `SaveManager:SetAutosaveEnabled(false)` if needed.
+5. **`Fluent.Options`** — Named controls (`AddToggle("Key", …)` etc.) must use **stable string keys** that match SaveManager save entries when you rely on configs.
 
 ---
 
-## Repository map
+## FluentPlus API highlights
 
-| Path | Role |
-|------|------|
-| [`FluentPlus/Beta.lua`](FluentPlus/Beta.lua) | Shipped library: window, tabs, elements, `CreateStatusBar`, `CreateKeySystem`, `AddRow`, `AddButtonRow`, bundled managers |
-| [`FluentPlus/Example.lua`](FluentPlus/Example.lua) | Full example: key system, status bar, columns, button row, SaveManager, InterfaceManager |
-| [`Addons/SaveManager.lua`](Addons/SaveManager.lua) | Drop-in fork: upstream-compatible API + autosave + `active_config.txt` / `autoload.txt` |
-| [`Addons/InterfaceManager.lua`](Addons/InterfaceManager.lua) | Same API as upstream InterfaceManager |
-| [`Fluent/`](Fluent/) | Upstream-style modular sources (Rojo); reference only for most distributors |
-| [`.github/workflows/release-fluentplus.yml`](.github/workflows/release-fluentplus.yml) | On **published** Release: uploads `main.lua` from `FluentPlus/Beta.lua` |
+Methods on the library object returned from `Beta.lua` (names may vary slightly; **`Beta.lua` is authoritative**):
+
+| Method | Notes |
+|--------|--------|
+| `CreateKeySystem(config)` | Before `CreateWindow`. `Key` or `Keys`, optional `SaveKey`, `FolderName`, `Note`, `URL`, `URLText`. |
+| `CreateWindow(config)` | Once per session. `Title`, `Size`, `Theme`, `Acrylic`, `TabWidth`, `Search`, `UserInfo`, … |
+| `CreateStatusBar(config)` | After window. `FPS`, `Ping`, `Fields`, `Position`, `AnchorPoint`. Returns object with `:SetField`, `:SetVisible`, `:Destroy`. |
+| `CreateMinimizer(config)` | Floating minimize control. |
+| `Notify({ Title, Content, SubContent?, Duration? })` | Toasts. |
+| `SetTheme(name)` | See theme names below. |
+| `Options` | Table of all registered options after `AddToggle` / `AddInput` / … |
+
+**Tab**
+
+- `AddTab({ Title, Icon })`
+- `AddSection(title, icon?)` — Lucide short name (no `lucide-` prefix) where applicable.
+- `AddRow(n)` — **FluentPlus:** `n` clamped 1–4; returns columns with `AddSection` + all `Add*` elements.
+- `AddSubTab(title, icon?)`
+- `AddParagraph({ … })` — On tab container.
+
+**Section / column**
+
+- `AddToggle`, `AddSlider`, `AddDropdown`, `AddInput`, `AddKeybind`, `AddColorpicker`, `AddButton` — same idea as upstream Fluent.
+- `AddButtonRow({ { Title, Callback }, … })` — **FluentPlus:** horizontal row of buttons.
 
 ---
 
-## API reference — FluentPlus additions (`Library` / `Fluent`)
+## Themes
 
-Methods on the object returned by `loadstring(...)()` (the main table).
+Built-in names include: **Dark**, **Darker**, **AMOLED**, **Light**, **Balloon**, **SoftCream**, **Aqua**, **Amethyst**, **Rose**, **Midnight**, **Forest**, **Sunset**, **Ocean**, **Emerald**, **Sapphire**, **Cloud**, **Grape**, **Bloody**, **Arctic**.
 
-| Method | When to call | Notes |
-|--------|----------------|-------|
-| `CreateKeySystem(config)` | Before `CreateWindow` | Blocking modal. `Key` or `Keys`, optional `SaveKey`, `FolderName`, `Note`, `URL`, `URLText`. Returns boolean. |
-| `CreateStatusBar(config)` | After GUI exists; typically after `CreateWindow` | `FPS`, `Ping` (booleans), `Fields = { { Name = "Label" } }`, `Position`, `AnchorPoint`. Returns object with `:SetField(name, value)`, `:SetVisible(bool)`, `:Destroy()`. |
-| `CreateWindow(config)` | Once | Same core options as Fluent: `Title`, `Size`, `Theme`, `Acrylic`, `TabWidth`, `Search`, `UserInfo`, etc. |
-| `CreateMinimizer(config)` | After window | Floating toggle button |
-| `Notify({ Title, Content, SubContent?, Duration? })` | Anytime | |
-| `SetTheme(name)` | Anytime | Theme name from library list |
-| `Options` | Global options registry | `Fluent.Options.MyToggle` after `AddToggle("MyToggle", ...)` |
+Authoritative list: `Themes.Names` (or equivalent) inside [`FluentPlus/Beta.lua`](FluentPlus/Beta.lua).
 
-### Tab
+---
 
-| Method | Description |
-|--------|-------------|
-| `AddTab({ Title, Icon })` | On `Window` |
-| `AddSection(title, icon?)` | Vertical section; `icon` = Lucide short name |
-| `AddRow(columnCount)` | **FluentPlus.** `columnCount` clamped 1–4. Returns array `Cols`; each `Cols[i]` has `AddSection` and all `Add*` from `Elements`. |
-| `AddSubTab(title, icon?)` | Horizontal sub-tabs; further `AddSection` targets active sub-tab |
-| `AddParagraph({ ... })` | On tab directly (no section) |
-
-### Section (and column objects from `AddRow`)
-
-| Method | Description |
-|--------|-------------|
-| `AddToggle`, `AddSlider`, `AddDropdown`, `AddInput`, `AddKeybind`, `AddColorpicker`, `AddButton` | Same as upstream Fluent; require stable string index where SaveManager applies |
-| `AddButtonRow({ { Title, Callback }, ... })` | **FluentPlus.** 2+ buttons in one horizontal row |
-
-### Persistence files (SaveManager fork)
+## SaveManager files
 
 Relative to `SaveManager:SetFolder(folder)`:
 
-| File | Purpose |
-|------|--------|
+| Path | Purpose |
+|------|---------|
 | `folder/settings/*.json` | Named configs |
-| `folder/settings/autoload.txt` | Config name loaded by `LoadAutoloadConfig()` |
-| `folder/settings/active_config.txt` | Target name for **autosave** (also set on Create / Load / Overwrite / Set autoload) |
-
-| SaveManager API | Purpose |
-|-----------------|--------|
-| `SetLibrary(Fluent)` | Required |
-| `SetFolder(path)` | Workspace folder for JSON |
-| `IgnoreThemeSettings()` | Ignore theme-related option keys |
-| `SetIgnoreIndexes({ "idx", ... })` | Skip options in save |
-| `BuildConfigSection(tab)` | UI for save/load + **installs autosave hooks** |
-| `LoadAutoloadConfig()` | Load `autoload.txt` config if present |
-| `SetAutosaveEnabled(false)` | Turn off autosave |
-| `AutoLoadOnBuild = true` | Before `BuildConfigSection`: auto-call `LoadAutoloadConfig` at end of section build |
-
-### InterfaceManager
-
-| Method | Purpose |
-|--------|--------|
-| `SetLibrary(Fluent)` | Required |
-| `SetFolder(path)` | Where `options.json` lives |
-| `BuildInterfaceSection(tab)` | Theme / acrylic / transparency / menu keybind UI |
+| `folder/settings/autoload.txt` | Name of config loaded by `LoadAutoloadConfig()` |
+| `folder/settings/active_config.txt` | Target for autosave |
 
 ---
 
-## Themes (names)
+## Troubleshooting
 
-Dark, Darker, AMOLED, Light, Balloon, SoftCream, Aqua, Amethyst, Rose, Midnight, Forest, Sunset, Ocean, Emerald, Sapphire, Cloud, Grape, Bloody, Arctic (see `Beta.lua` `Themes.Names` for authoritative list).
-
----
-
-## Upstream vs FluentPlus (summary)
-
-- **Same**: Tab/section/element patterns, Lucide icons by short name, SaveManager UI flow, InterfaceManager.
-- **Added**: `Tab:AddRow`, `Section:AddButtonRow`, `CreateStatusBar`, `CreateKeySystem`, autosaving fork in `Addons/SaveManager.lua`, extended themes, FluentPlus-specific window/search/subtab behavior in `Beta.lua`.
+| Issue | Likely cause |
+|-------|----------------|
+| Second window error | Only one `CreateWindow` per run. |
+| Save/load does nothing | Executor missing `writefile` / `readfile`. |
+| Key UI never shows | You called `CreateWindow` before `CreateKeySystem`. |
+| Icons missing | Wrong icon string; use Lucide short names as in `Example.lua`. |
 
 ---
 
-## More docs
+## Contributing
 
-- In-repo feature overview: [`FluentPlus/README.md`](FluentPlus/README.md) (screenshot + marketing bullets).
-- External base API: [Fluent documentation](https://forgenet.gitbook.io/fluent-documentation).
+- Prefer **`FluentPlus/Example.lua`** as the contract for public API examples.
+- When changing `Beta.lua` return values or load strategy, update this **README** and any release workflow.
+
+---
+
+## License
+
+Add your license here (e.g. MIT) if the repo does not already include a `LICENSE` file. Upstream Fluent may have its own terms—verify compatibility when redistributing.
