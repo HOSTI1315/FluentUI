@@ -1,27 +1,43 @@
 --[[
 	SkrilyaSaveManager — нативное автосохранение конфигов для SkrilyaHub
-	Executor-only (writefile / readfile / isfolder / makefolder / listfiles / delfile)
+	Executor-only (writefile / readfile / isfile / isfolder / makefolder / listfiles / delfile)
 
-	Структура на диске:
+	Структура на диске (режим SkrilyaHub):
 		SkrilyaHub/
 			<GameName>/
 				settings/
 					default.json
-					active_config.txt
+					active_config.txt    ← активный конфиг
+					autoload.txt         ← (legacy) поддерживается для обратной совместимости
 
-	Использование:
-		local SaveManager = loadstring(game:HttpGet(REPO .. "/Addons/SkrilyaSaveManager.lua"))()
+	Структура на диске (legacy / ручной режим):
+		<Folder>/               ← задаётся через SetFolder()
+			settings/
+				<config>.json
+				active_config.txt / autoload.txt
+
+	Использование — SkrilyaHub-стиль (рекомендуется):
+		local SaveManager = loadstring(game:HttpGet(REPO.."/Addons/SkrilyaSaveManager.lua"))()
 		-- ... создать Window, Tabs, Elements ...
-		SaveManager:Init(Fluent)                       -- папки + хуки + автозагрузка
-		SaveManager:BuildConfigSection(Tabs.Settings)  -- UI для ручного управления
+		SaveManager:Init(Fluent)
+		SaveManager:BuildConfigSection(Tabs.Settings)
+
+	Использование — legacy-стиль (обратная совместимость с SaveManager.lua):
+		SaveManager:SetLibrary(Fluent)
+		SaveManager:SetFolder("MyHub/MyGame")   -- отключает авто-определение игры
+		SaveManager:IgnoreThemeSettings()
+		SaveManager:BuildConfigSection(tab)     -- AutoLoadOnBuild=true → грузит autoload.txt
+		-- либо вручную: SaveManager:LoadAutoloadConfig()
 ]]
 
-local HttpService = game:GetService("HttpService")
+local HttpService        = game:GetService("HttpService")
 local MarketplaceService = game:GetService("MarketplaceService")
 
-local HUB_ROOT = "SkrilyaHub"
+local HUB_ROOT      = "SkrilyaHub"
 local DEFAULT_CONFIG = "default"
 local DEBOUNCE_DELAY = 0.35
+
+-- ─── утилиты ─────────────────────────────────────────────────────────────────
 
 local function trim(s)
 	if type(s) ~= "string" then return "" end
@@ -49,30 +65,42 @@ local function resolveGameName()
 end
 
 local function ensureFolder(path)
-	if not isfolder(path) then
-		makefolder(path)
-	end
+	if not isfolder(path) then makefolder(path) end
 end
 
--- ─────────────────────────────────────────────
+-- ─────────────────────────────────────────────────────────────────────────────
 --  SaveManager
--- ─────────────────────────────────────────────
+-- ─────────────────────────────────────────────────────────────────────────────
 
 local SaveManager = {}
 do
-	SaveManager.Library      = nil
-	SaveManager.Options      = nil
-	SaveManager.Ignore       = {}
-	SaveManager.Folder       = nil   -- SkrilyaHub/<GameName>
-	SaveManager.GameName     = nil
+	-- ── публичные поля ──
+
+	SaveManager.Library          = nil
+	SaveManager.Options          = nil
+	SaveManager.Ignore           = {}
+	SaveManager.Folder           = nil   -- nil → авто; строка → ручной режим
+	SaveManager.GameName         = nil
+	SaveManager.AutoLoadOnBuild  = false -- legacy: грузить autoload.txt в BuildConfigSection
+
+	-- ── приватные поля ──
 
 	SaveManager._activeConfig    = nil
 	SaveManager._debounceId      = 0
 	SaveManager._hooksInstalled  = false
-	SaveManager._suppressSave    = false
-	SaveManager._autosaveEnabled = true
+	SaveManager._folderOverride  = false -- true когда папка задана вручную через SetFolder
 
-	-- ── Парсеры для каждого типа элемента ──
+	-- _suppressSave / _suppressAutosave — оба имени поддерживаются
+	-- Доступ всегда через метод, чтобы legacy-код `self._suppressAutosave = true` тоже работал
+	SaveManager._suppressSave     = false
+	SaveManager._autosaveEnabled  = true
+
+	-- ── прокси для legacy-имён ──
+	-- Эти поля просто алиасы (читаются/пишутся через __index/__newindex ниже)
+
+	-- ─────────────────────────────────────────────────────────────────
+	--  Парсеры (сохранение / восстановление каждого типа элемента)
+	-- ─────────────────────────────────────────────────────────────────
 
 	SaveManager.Parser = {
 		Toggle = {
@@ -85,13 +113,18 @@ do
 				end
 			end,
 		},
+		-- Слайдер: сохраняем строкой (JSON), но грузим через tonumber чтобы
+		-- math.clamp не падал с "attempt to compare string < number"
 		Slider = {
 			Save = function(idx, obj)
 				return { type = "Slider", idx = idx, value = tostring(obj.Value) }
 			end,
 			Load = function(idx, data)
 				if SaveManager.Options[idx] then
-					SaveManager.Options[idx]:SetValue(data.value)
+					local n = tonumber(data.value)
+					if n ~= nil then
+						SaveManager.Options[idx]:SetValue(n)
+					end
 				end
 			end,
 		},
@@ -101,6 +134,7 @@ do
 			end,
 			Load = function(idx, data)
 				if SaveManager.Options[idx] then
+					-- поддержка legacy-опечатки "mutli"
 					SaveManager.Options[idx]:SetValue(data.value)
 				end
 			end,
@@ -137,7 +171,9 @@ do
 		},
 	}
 
-	-- ── Привязка библиотеки ──
+	-- ─────────────────────────────────────────────────────────────────
+	--  Привязка библиотеки
+	-- ─────────────────────────────────────────────────────────────────
 
 	function SaveManager:SetLibrary(library)
 		self.Library = library
@@ -148,9 +184,12 @@ do
 		self._autosaveEnabled = not not enabled
 	end
 
+	-- Принимает и таблицу (ipairs), и хеш-список (next), как в обоих оригиналах
 	function SaveManager:SetIgnoreIndexes(list)
-		for _, key in ipairs(list) do
-			self.Ignore[key] = true
+		if type(list) == "table" then
+			for _, key in ipairs(list) do
+				if type(key) == "string" then self.Ignore[key] = true end
+			end
 		end
 	end
 
@@ -161,13 +200,25 @@ do
 		})
 	end
 
-	-- ── Файловая система ──
+	-- ─────────────────────────────────────────────────────────────────
+	--  Файловая система / папки
+	-- ─────────────────────────────────────────────────────────────────
 
+	-- Ручная установка папки (legacy).  Отключает авто-определение игры.
+	function SaveManager:SetFolder(folder)
+		self.Folder        = trim(folder)
+		self._folderOverride = true
+		self:BuildFolderTree()
+	end
+
+	-- BuildFolderTree: если папка задана вручную — использует её;
+	-- иначе авто SkrilyaHub/<GameName>.
 	function SaveManager:BuildFolderTree()
-		self.GameName = resolveGameName()
-		self.Folder = HUB_ROOT .. "/" .. self.GameName
-
-		ensureFolder(HUB_ROOT)
+		if not self._folderOverride then
+			self.GameName = resolveGameName()
+			self.Folder   = HUB_ROOT .. "/" .. self.GameName
+			ensureFolder(HUB_ROOT)
+		end
 		ensureFolder(self.Folder)
 		ensureFolder(self.Folder .. "/settings")
 	end
@@ -180,19 +231,27 @@ do
 		return self.Folder .. "/settings/active_config.txt"
 	end
 
-	-- ── Активный конфиг ──
+	function SaveManager:_autoloadPath()
+		return self.Folder .. "/settings/autoload.txt"
+	end
+
+	-- ─────────────────────────────────────────────────────────────────
+	--  Активный конфиг
+	-- ─────────────────────────────────────────────────────────────────
 
 	function SaveManager:GetActiveConfig()
-		if self._activeConfig then
-			return self._activeConfig
+		if self._activeConfig then return self._activeConfig end
+		-- 1. новый формат
+		local ap = self:_activeConfigPath()
+		if isfile(ap) then
+			local n = trim(readfile(ap))
+			if n ~= "" then self._activeConfig = n; return n end
 		end
-		local path = self:_activeConfigPath()
-		if isfile(path) then
-			local name = trim(readfile(path))
-			if name ~= "" then
-				self._activeConfig = name
-				return name
-			end
+		-- 2. legacy autoload.txt
+		local lp = self:_autoloadPath()
+		if isfile(lp) then
+			local n = trim(readfile(lp))
+			if n ~= "" then self._activeConfig = n; return n end
 		end
 		return nil
 	end
@@ -204,7 +263,64 @@ do
 		pcall(writefile, self:_activeConfigPath(), name)
 	end
 
-	-- ── Save / Load ──
+	-- Legacy-алиас
+	function SaveManager:_setActiveConfigName(name)
+		self:SetActiveConfig(name)
+	end
+
+	-- Legacy-метод: читает autoload.txt и загружает конфиг
+	function SaveManager:LoadAutoloadConfig()
+		local lp = self:_autoloadPath()
+		if not isfile(lp) then return end
+		local name = trim(readfile(lp))
+		if name == "" then return end
+
+		local ok, err = self:Load(name)
+		if not ok then
+			if self.Library then
+				self.Library:Notify({
+					Title   = "SkrilyaHub",
+					Content = "Config",
+					SubContent = "Failed to load autoload config: " .. tostring(err),
+					Duration = 7,
+				})
+			end
+			return
+		end
+
+		if self.Library then
+			self.Library:Notify({
+				Title   = "SkrilyaHub",
+				Content = "Config",
+				SubContent = string.format("Auto loaded config %q", name),
+				Duration = 7,
+			})
+		end
+	end
+
+	-- ─────────────────────────────────────────────────────────────────
+	--  _suppressSave / _suppressAutosave — оба имени
+	-- ─────────────────────────────────────────────────────────────────
+	-- Используем __index/__newindex на объекте для прозрачного алиаса
+
+	local _smMeta = {
+		__index = function(t, k)
+			if k == "_suppressAutosave" then return rawget(t, "_suppressSave") end
+			return nil
+		end,
+		__newindex = function(t, k, v)
+			if k == "_suppressAutosave" then
+				rawset(t, "_suppressSave", v)
+			else
+				rawset(t, k, v)
+			end
+		end,
+	}
+	setmetatable(SaveManager, _smMeta)
+
+	-- ─────────────────────────────────────────────────────────────────
+	--  Save / Load / Delete
+	-- ─────────────────────────────────────────────────────────────────
 
 	function SaveManager:Save(name)
 		name = name or self:GetActiveConfig() or DEFAULT_CONFIG
@@ -260,9 +376,7 @@ do
 			end
 		end
 
-		if pending == 0 then
-			self._suppressSave = false
-		end
+		if pending == 0 then self._suppressSave = false end
 
 		self:SetActiveConfig(name)
 		return true
@@ -273,20 +387,18 @@ do
 		local path = self:_configPath(name)
 		if isfile(path) then
 			delfile(path)
-			if self._activeConfig == name then
-				self._activeConfig = nil
-			end
+			if self._activeConfig == name then self._activeConfig = nil end
 			return true
 		end
 		return false
 	end
 
-	-- ── Автосохранение с дебаунсом ──
+	-- ─────────────────────────────────────────────────────────────────
+	--  Автосохранение
+	-- ─────────────────────────────────────────────────────────────────
 
 	function SaveManager:_scheduleAutosave()
-		if self._suppressSave or not self._autosaveEnabled or not self.Library then
-			return
-		end
+		if self._suppressSave or not self._autosaveEnabled or not self.Library then return end
 
 		local target = self:GetActiveConfig()
 		if not target then return end
@@ -303,7 +415,9 @@ do
 
 	function SaveManager:_wrapOption(idx, option)
 		if self.Ignore[idx] then return end
-		if type(option) ~= "table" or option.__SkrilyaWrapped then return end
+		if type(option) ~= "table" then return end
+		-- поддерживаем оба маркера (новый и legacy)
+		if option.__SkrilyaWrapped or option.__SaveManagerAutosaveWrapped then return end
 		if not self.Parser[option.Type] then return end
 
 		local origSetValue = option.SetValue
@@ -324,9 +438,11 @@ do
 			end
 		end
 
-		option.__SkrilyaWrapped = true
+		option.__SkrilyaWrapped             = true
+		option.__SaveManagerAutosaveWrapped = true  -- legacy-маркер
 	end
 
+	-- Legacy-алиасы для имён методов
 	function SaveManager:_installHooks()
 		if self._hooksInstalled or not self.Options then return end
 
@@ -344,7 +460,17 @@ do
 		self._hooksInstalled = true
 	end
 
-	-- ── Список конфигов ──
+	-- Legacy-алиас
+	SaveManager._installAutosaveHooks = SaveManager._installHooks
+
+	-- Legacy-алиас для _getAutosaveConfigName (старый SaveManager)
+	function SaveManager:_getAutosaveConfigName()
+		return self:GetActiveConfig()
+	end
+
+	-- ─────────────────────────────────────────────────────────────────
+	--  Список конфигов
+	-- ─────────────────────────────────────────────────────────────────
 
 	function SaveManager:RefreshConfigList()
 		local dir = self.Folder .. "/settings"
@@ -362,8 +488,9 @@ do
 		return out
 	end
 
-	-- ── Init: одна точка входа ──
-	-- Вызывать ПОСЛЕ создания всех элементов UI
+	-- ─────────────────────────────────────────────────────────────────
+	--  Init — одна точка входа (SkrilyaHub-стиль)
+	-- ─────────────────────────────────────────────────────────────────
 
 	function SaveManager:Init(library)
 		self:SetLibrary(library)
@@ -374,12 +501,12 @@ do
 		local active = self:GetActiveConfig()
 		if active and isfile(self:_configPath(active)) then
 			local ok, err = self:Load(active)
-			if ok then
+			if ok and self.Library then
 				self.Library:Notify({
-					Title = "SkrilyaHub",
-					Content = "Config",
+					Title      = "SkrilyaHub",
+					Content    = "Config",
 					SubContent = string.format("Loaded %q", active),
-					Duration = 5,
+					Duration   = 5,
 				})
 			end
 		else
@@ -388,72 +515,79 @@ do
 		end
 	end
 
-	-- ── UI-секция для ручного управления конфигами ──
+	-- ─────────────────────────────────────────────────────────────────
+	--  BuildConfigSection — поддерживает оба набора ключей опций
+	-- ─────────────────────────────────────────────────────────────────
+	-- new:    SM_ConfigName / SM_ConfigList
+	-- legacy: SaveManager_ConfigName / SaveManager_ConfigList
 
 	function SaveManager:BuildConfigSection(tab)
 		assert(self.Library, "Call Init() or SetLibrary() first")
 
+		-- Убедимся что папки созданы (нужно для legacy-потока без Init)
+		if not self.Folder then
+			self:BuildFolderTree()
+		end
+
+		-- Устанавливаем хуки, если ещё не установлены (legacy без Init)
+		if not self._hooksInstalled then
+			self:_installHooks()
+		end
+
+		-- Определяем префикс ключей: если уже зарегистрированы legacy-ключи — используем их
+		local legacyKeys = self.Options and self.Options["SaveManager_ConfigName"] ~= nil
+		local nameKey = legacyKeys and "SaveManager_ConfigName" or "SM_ConfigName"
+		local listKey = legacyKeys and "SaveManager_ConfigList" or "SM_ConfigList"
+
 		local section = tab:AddSection("Configuration", "save")
 
-		section:AddInput("SM_ConfigName", { Title = "Config name" })
-		section:AddDropdown("SM_ConfigList", {
-			Title = "Config list",
-			Values = self:RefreshConfigList(),
+		section:AddInput(nameKey, { Title = "Config name" })
+		section:AddDropdown(listKey, {
+			Title     = "Config list",
+			Values    = self:RefreshConfigList(),
 			AllowNull = true,
 		})
 
 		section:AddButton({
 			Title = "Create config",
 			Callback = function()
-				local name = trim(self.Options.SM_ConfigName.Value)
+				local name = trim(self.Options[nameKey].Value)
 				if name == "" then
 					return self.Library:Notify({
-						Title = "SkrilyaHub",
-						Content = "Config",
-						SubContent = "Empty name",
-						Duration = 5,
+						Title = "SkrilyaHub", Content = "Config",
+						SubContent = "Empty config name", Duration = 5,
 					})
 				end
-
 				local ok, err = self:Save(name)
 				if not ok then
 					return self.Library:Notify({
-						Title = "SkrilyaHub",
-						Content = "Config",
-						SubContent = "Failed: " .. tostring(err),
-						Duration = 5,
+						Title = "SkrilyaHub", Content = "Config",
+						SubContent = "Failed: " .. tostring(err), Duration = 5,
 					})
 				end
-
 				self.Library:Notify({
-					Title = "SkrilyaHub",
-					Content = "Config",
-					SubContent = string.format("Created %q", name),
-					Duration = 5,
+					Title = "SkrilyaHub", Content = "Config",
+					SubContent = string.format("Created %q", name), Duration = 5,
 				})
-				self.Options.SM_ConfigList:SetValues(self:RefreshConfigList())
-				self.Options.SM_ConfigList:SetValue(nil)
+				self.Options[listKey]:SetValues(self:RefreshConfigList())
+				self.Options[listKey]:SetValue(nil)
 			end,
 		})
 
 		section:AddButton({
 			Title = "Load config",
 			Callback = function()
-				local name = self.Options.SM_ConfigList.Value
+				local name = self.Options[listKey].Value
 				local ok, err = self:Load(name)
 				if not ok then
 					return self.Library:Notify({
-						Title = "SkrilyaHub",
-						Content = "Config",
-						SubContent = "Failed: " .. tostring(err),
-						Duration = 5,
+						Title = "SkrilyaHub", Content = "Config",
+						SubContent = "Failed: " .. tostring(err), Duration = 5,
 					})
 				end
 				self.Library:Notify({
-					Title = "SkrilyaHub",
-					Content = "Config",
-					SubContent = string.format("Loaded %q", name),
-					Duration = 5,
+					Title = "SkrilyaHub", Content = "Config",
+					SubContent = string.format("Loaded %q", name), Duration = 5,
 				})
 			end,
 		})
@@ -461,21 +595,17 @@ do
 		section:AddButton({
 			Title = "Overwrite config",
 			Callback = function()
-				local name = self.Options.SM_ConfigList.Value
+				local name = self.Options[listKey].Value
 				local ok, err = self:Save(name)
 				if not ok then
 					return self.Library:Notify({
-						Title = "SkrilyaHub",
-						Content = "Config",
-						SubContent = "Failed: " .. tostring(err),
-						Duration = 5,
+						Title = "SkrilyaHub", Content = "Config",
+						SubContent = "Failed: " .. tostring(err), Duration = 5,
 					})
 				end
 				self.Library:Notify({
-					Title = "SkrilyaHub",
-					Content = "Config",
-					SubContent = string.format("Overwritten %q", name),
-					Duration = 5,
+					Title = "SkrilyaHub", Content = "Config",
+					SubContent = string.format("Overwritten %q", name), Duration = 5,
 				})
 			end,
 		})
@@ -483,32 +613,55 @@ do
 		section:AddButton({
 			Title = "Delete config",
 			Callback = function()
-				local name = self.Options.SM_ConfigList.Value
+				local name = self.Options[listKey].Value
 				if not name or trim(name) == "" then return end
 				self:Delete(name)
 				self.Library:Notify({
-					Title = "SkrilyaHub",
-					Content = "Config",
-					SubContent = string.format("Deleted %q", name),
-					Duration = 5,
+					Title = "SkrilyaHub", Content = "Config",
+					SubContent = string.format("Deleted %q", name), Duration = 5,
 				})
-				self.Options.SM_ConfigList:SetValues(self:RefreshConfigList())
-				self.Options.SM_ConfigList:SetValue(nil)
+				self.Options[listKey]:SetValues(self:RefreshConfigList())
+				self.Options[listKey]:SetValue(nil)
 			end,
 		})
+
+		-- "Set as autoload" (legacy-кнопка, пишет autoload.txt)
+		local AutoloadButton
+		AutoloadButton = section:AddButton({
+			Title       = "Set as autoload",
+			Description = "Current autoload: none",
+			Callback = function()
+				local name = self.Options[listKey].Value
+				if not name or trim(name) == "" then return end
+				pcall(writefile, self:_autoloadPath(), name)
+				self:SetActiveConfig(name)
+				AutoloadButton:SetDesc("Current autoload: " .. name)
+				self.Library:Notify({
+					Title = "SkrilyaHub", Content = "Config",
+					SubContent = string.format("Set %q as autoload", name), Duration = 5,
+				})
+			end,
+		})
+
+		-- Показываем текущий autoload в описании кнопки
+		local curAuto = self:GetActiveConfig()
+		if curAuto then
+			AutoloadButton:SetDesc("Current autoload: " .. curAuto)
+		end
 
 		section:AddButton({
 			Title = "Refresh list",
 			Callback = function()
-				self.Options.SM_ConfigList:SetValues(self:RefreshConfigList())
-				self.Options.SM_ConfigList:SetValue(nil)
+				self.Options[listKey]:SetValues(self:RefreshConfigList())
+				self.Options[listKey]:SetValue(nil)
 			end,
 		})
 
-		self:SetIgnoreIndexes({ "SM_ConfigName", "SM_ConfigList" })
+		self:SetIgnoreIndexes({ nameKey, listKey })
 
-		if not self._hooksInstalled then
-			self:_installHooks()
+		-- Legacy: AutoLoadOnBuild
+		if self.AutoLoadOnBuild then
+			self:LoadAutoloadConfig()
 		end
 	end
 end
