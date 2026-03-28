@@ -2303,7 +2303,7 @@ function MacLib:Window(Settings)
 						Constraint.MaxSize = Vector2.new(maxWidth, 9e9)
 					end
 
-					checkSize()
+					task.defer(checkSize)
 					InputName:GetPropertyChangedSignal("AbsoluteSize"):Connect(checkSize)
 
 					InputBox.FocusLost:Connect(function()
