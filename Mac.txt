@@ -1,6 +1,7 @@
 local MacLib = { 
 	Options = {}, 
 	Folder = "ApelHub", 
+	ConfigMode = "shared", -- "shared" = one config for all accounts, "perUser" = separate config per account
 	GetService = function(service)
 		return cloneref and cloneref(game:GetService(service)) or game:GetService(service)
 	end
@@ -796,6 +797,9 @@ function MacLib:Window(Settings)
 	local startPos
 
 	local function update(input)
+		if not input or not input.Position or not dragStart or not startPos then
+			return
+		end
 		local delta = input.Position - dragStart
 		base.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
 	end
@@ -1600,6 +1604,24 @@ function MacLib:Window(Settings)
 
 			right.Parent = sidesContainer
 
+			local bottom = Instance.new("Frame")
+			bottom.Name = "Bottom"
+			bottom.AutomaticSize = Enum.AutomaticSize.Y
+			bottom.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+			bottom.BackgroundTransparency = 1
+			bottom.BorderColor3 = Color3.fromRGB(0, 0, 0)
+			bottom.BorderSizePixel = 0
+			bottom.LayoutOrder = 2
+			bottom.Size = UDim2.new(1, 0, 0, 0)
+
+			local bottomUIListLayout = Instance.new("UIListLayout")
+			bottomUIListLayout.Name = "BottomUIListLayout"
+			bottomUIListLayout.Padding = UDim.new(0, 15)
+			bottomUIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+			bottomUIListLayout.Parent = bottom
+
+			bottom.Parent = elementsScrolling
+
 			elementsScrolling.Parent = elements1
 
 			function TabFunctions:Section(Settings)
@@ -1622,8 +1644,10 @@ function MacLib:Window(Settings)
 					section.Parent = right
 				elseif Settings.Side == "Center" then
 					section.Parent = center
+				elseif Settings.Side == "Bottom" then
+					section.Parent = bottom
 				else
-					section.Parent = left -- По умолчанию левая сторона
+					section.Parent = left
 				end
 
 				local sectionUICorner = Instance.new("UICorner")
@@ -4956,14 +4980,20 @@ function MacLib:Window(Settings)
                 configSection:Button({
                     Name = "Remove autoload",
                     Callback = function()
-                        local gameFolder = GetGameFolder()
-                        local path = gameFolder .. "/autoload.txt"
-                        if(isfile(path)) then
-                            local autoloadedConfig = readfile(path)
-
-                            task.wait();
-
-                            delfile(path);
+                        local userPath = GetGameFolder() .. "/autoload.txt"
+                        local legacyPath = GetBaseGameFolder() .. "/autoload.txt"
+                        local removed = false
+                        if isfile(userPath) then
+                            task.wait()
+                            delfile(userPath)
+                            removed = true
+                        end
+                        if isfile(legacyPath) then
+                            task.wait()
+                            delfile(legacyPath)
+                            removed = true
+                        end
+                        if removed then
                             WindowFunctions:Notify({
                                 Title = "Interface",
                                 Description = "Autoload has been disabled"
@@ -4979,11 +5009,47 @@ function MacLib:Window(Settings)
 
 				autoloadLabel = configSection:Label({Text = "Autoload config: None"})
 
-				local gameFolder = GetGameFolder()
-				if isfile(gameFolder .. "/autoload.txt") then
-					local name = readfile(gameFolder .. "/autoload.txt")
-					autoloadLabel:UpdateName("Autoload config: " .. name)
+				do
+					local userPath = GetGameFolder() .. "/autoload.txt"
+					local legacyPath = GetBaseGameFolder() .. "/autoload.txt"
+					local name
+					if isfile(userPath) then
+						name = readfile(userPath)
+					elseif isfile(legacyPath) then
+						name = readfile(legacyPath)
+					end
+					if name and name ~= "" then
+						autoloadLabel:UpdateName("Autoload config: " .. name)
+					end
 				end
+			end
+
+			function TabFunctions:InsertConfigModeSection(Side)
+				local modeSection = TabFunctions:Section({ Side = Side or "Right" })
+
+				if isStudio then
+					modeSection:Label({Text = "Config system unavailable."})
+					return
+				end
+
+				modeSection:Header({ Text = "Config Mode" })
+				modeSection:Paragraph({
+					Header = "How it works",
+					Body = "Shared: one config for all accounts on this device.\nPer Account: each Roblox account gets its own config.",
+				})
+				modeSection:Toggle({
+					Name = "Separate config per account",
+					Default = MacLib.ConfigMode == "perUser",
+					Callback = function(v)
+						MacLib.ConfigMode = v and "perUser" or "shared"
+						MacLib:SaveConfigMode()
+						WindowFunctions:Notify({
+							Title = "Config Mode",
+							Description = v and "Configs are now separate per account. Restart to apply." or "Configs are now shared. Restart to apply.",
+						})
+					end,
+					IgnoreConfig = true,
+				})
 			end
 
 			tabs[tabSwitcher] = {
@@ -5724,42 +5790,135 @@ function MacLib:Window(Settings)
 		end
 	end
 
-	local function GetGameFolder()
-		-- База: settings/<PlaceId или CreatorId>; внутри — подпапка на аккаунт (UserId)
+	-- Папка игры без UserId (старые общие конфиги лежали здесь)
+	local function GetBaseGameFolder()
 		local placeId = tostring(game.PlaceId)
 		local creatorId = tostring(game.CreatorId)
-		local userId = tostring(LocalPlayer.UserId)
-
 		local oldPath = MacLib.Folder .. "/settings/" .. placeId
 		local newPath = MacLib.Folder .. "/settings/" .. creatorId
-
-		local baseFolder
 		if isfolder(oldPath) then
-			baseFolder = oldPath
-		else
-			if not isfolder(newPath) then
-				makefolder(newPath)
+			return oldPath
+		end
+		if not isfolder(newPath) then
+			makefolder(newPath)
+		end
+		return newPath
+	end
+
+	-- ConfigMode persistence (saved in base game folder, not inside config)
+	local function LoadConfigMode()
+		if isStudio or not (isfile and readfile) then return end
+		pcall(function()
+			local baseFolder = GetBaseGameFolder()
+			local modePath = baseFolder .. "/config_mode.txt"
+			warn("[MacLib] LoadConfigMode path: " .. modePath .. " exists: " .. tostring(isfile(modePath)))
+			if isfile(modePath) then
+				local mode = readfile(modePath)
+				warn("[MacLib] LoadConfigMode read: '" .. tostring(mode) .. "'")
+				if mode == "perUser" then
+					MacLib.ConfigMode = "perUser"
+				else
+					MacLib.ConfigMode = "shared"
+				end
 			end
-			baseFolder = newPath
-		end
+		end)
+	end
 
-		local userFolder = baseFolder .. "/" .. userId
-		if not isfolder(userFolder) then
-			makefolder(userFolder)
-		end
+	local function SaveConfigMode()
+		if isStudio or not writefile then return end
+		pcall(function()
+			local baseFolder = GetBaseGameFolder()
+			local modePath = baseFolder .. "/config_mode.txt"
+			warn("[MacLib] SaveConfigMode path: " .. modePath .. " mode: " .. MacLib.ConfigMode)
+			writefile(modePath, MacLib.ConfigMode)
+		end)
+	end
 
-		return userFolder
+	LoadConfigMode()
+
+	-- Auto-add Config Mode toggle to Global Settings (after LoadConfigMode so Default is correct)
+	task.defer(function()
+		WindowFunctions:GlobalSetting({
+			Name = "Config per account",
+			Default = MacLib.ConfigMode == "perUser",
+			Callback = function(v)
+				MacLib.ConfigMode = v and "perUser" or "shared"
+				MacLib:SaveConfigMode()
+			end
+		})
+	end)
+
+	local function GetGameFolder()
+		if MacLib.ConfigMode == "perUser" then
+			local baseFolder = GetBaseGameFolder()
+			local userFolder = baseFolder .. "/" .. tostring(LocalPlayer.UserId)
+			if not isfolder(userFolder) then
+				makefolder(userFolder)
+			end
+			return userFolder
+		end
+		return GetBaseGameFolder()
+	end
+
+	local function EnsureUserAutoloadFile()
+		local autoloadPath = GetGameFolder() .. "/autoload.txt"
+		if isfile(autoloadPath) then
+			return
+		end
+		local legacyPath = GetBaseGameFolder() .. "/autoload.txt"
+		if isfile(legacyPath) then
+			local n = readfile(legacyPath)
+			if n and n ~= "" then
+				writefile(autoloadPath, n)
+			else
+				writefile(autoloadPath, "default")
+			end
+		else
+			writefile(autoloadPath, "default")
+		end
+	end
+
+	local function ResolveConfigJsonPath(nameNoExt)
+		local userJson = GetGameFolder() .. "/" .. nameNoExt .. ".json"
+		local legacyJson = GetBaseGameFolder() .. "/" .. nameNoExt .. ".json"
+		if isfile(userJson) then
+			return userJson
+		end
+		if isfile(legacyJson) then
+			return legacyJson
+		end
+		return userJson
+	end
+
+	local function AppendJsonConfigNames(dir, out, seen)
+		local list = isfolder(dir) and listfiles(dir) or {}
+		for i = 1, #list do
+			local file = list[i]
+			if file:sub(-5) == ".json" then
+				local pos = file:find(".json", 1, true)
+				local start = pos
+				local char = file:sub(pos, pos)
+				while char ~= "/" and char ~= "\\" and char ~= "" do
+					pos = pos - 1
+					char = file:sub(pos, pos)
+				end
+				if char == "/" or char == "\\" then
+					local name = file:sub(pos + 1, start - 1)
+					if name ~= "options" and not seen[name] then
+						seen[name] = true
+						table.insert(out, name)
+					end
+				end
+			end
+		end
 	end
 
 	function MacLib:LoadAutoLoadConfig()
 		if isStudio or not (isfile and readfile) then return "Config system unavailable." end
 
+		EnsureUserAutoloadFile()
 		local gameFolder = GetGameFolder()
 		local autoloadPath = gameFolder .. "/autoload.txt"
-
-		if not isfile(autoloadPath) then
-			writefile(autoloadPath, "default")
-		end
 
 		local name = readfile(autoloadPath)
 		if not name or name == "" then
@@ -5787,6 +5946,10 @@ function MacLib:Window(Settings)
 
 		MacLib.Folder = Folder;
 		BuildFolderTree()
+	end
+
+	function MacLib:SaveConfigMode()
+		SaveConfigMode()
 	end
 
 	function MacLib:SaveConfig(Path)
@@ -5822,12 +5985,8 @@ function MacLib:Window(Settings)
 	function MacLib:AutoSave()
 		if isStudio or not (writefile and isfile and readfile) then return end
 
-		local gameFolder = GetGameFolder()
-		local autoloadPath = gameFolder .. "/autoload.txt"
-
-		if not isfile(autoloadPath) then
-			writefile(autoloadPath, "default")
-		end
+		EnsureUserAutoloadFile()
+		local autoloadPath = GetGameFolder() .. "/autoload.txt"
 
 		local configName = readfile(autoloadPath)
 		if not configName or configName == "" then
@@ -5847,8 +6006,7 @@ function MacLib:Window(Settings)
 			return false, "Please select a config file."
 		end
 
-		local gameFolder = GetGameFolder()
-		local file = gameFolder .. "/" .. Path .. ".json"
+		local file = ResolveConfigJsonPath(Path)
 		if not isfile(file) then return false, "Invalid file" end
 
 		local success, decoded = pcall(HttpService.JSONDecode, HttpService, readfile(file))
@@ -5868,31 +6026,10 @@ function MacLib:Window(Settings)
 	function MacLib:RefreshConfigList()
 		if isStudio or not (isfolder and listfiles) then return "Config system unavailable." end
 
-		local gameFolder = GetGameFolder()
-		local list = isfolder(gameFolder) and listfiles(gameFolder) or {}
-
+		local seen = {}
 		local out = {}
-		for i = 1, #list do
-			local file = list[i]
-			if file:sub(-5) == ".json" then
-				local pos = file:find(".json", 1, true)
-				local start = pos
-
-				local char = file:sub(pos, pos)
-				while char ~= "/" and char ~= "\\" and char ~= "" do
-					pos = pos - 1
-					char = file:sub(pos, pos)
-				end
-
-				if char == "/" or char == "\\" then
-					local name = file:sub(pos + 1, start - 1)
-					if name ~= "options" then
-						table.insert(out, name)
-					end
-				end
-			end
-		end
-
+		AppendJsonConfigNames(GetGameFolder(), out, seen)
+		AppendJsonConfigNames(GetBaseGameFolder(), out, seen)
 		return out
 	end
 
@@ -6050,6 +6187,9 @@ function MacLib:Window(Settings)
 
 		UserInputService.InputChanged:Connect(function(input)
 			if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+				if not dragStart or not startPos or not input or not input.Position then
+					return
+				end
 				local delta = input.Position - dragStart
 				local newX = startPos.X.Offset + delta.X
 				local newY = startPos.Y.Offset + delta.Y
