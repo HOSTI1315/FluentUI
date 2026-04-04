@@ -12,6 +12,7 @@ local RunService = MacLib.GetService("RunService")
 local HttpService = MacLib.GetService("HttpService")
 local ContentProvider = MacLib.GetService("ContentProvider")
 local UserInputService = MacLib.GetService("UserInputService")
+local function _sd(fn) return function(...) local a={...} task.defer(function() fn(unpack(a)) end) end end
 local Lighting = MacLib.GetService("Lighting")
 local Players = MacLib.GetService("Players")
 
@@ -955,21 +956,21 @@ function MacLib:Window(Settings)
 			toggled = false
 		end
 	end
-	globalSettingsButton.MouseButton1Click:Connect(function()
+	globalSettingsButton.MouseButton1Click:Connect(_sd(function()
 		if not hasGlobalSetting then return end
 		toggle()
-	end)
+	end))
 	globalSettings.MouseEnter:Connect(function()
 		hovering = true
 	end)
 	globalSettings.MouseLeave:Connect(function()
 		hovering = false
 	end)
-	UserInputService.InputEnded:Connect(function(inp)
+	UserInputService.InputEnded:Connect(_sd(function(inp)
 		if inp.UserInputType == Enum.UserInputType.MouseButton1 and toggled and not hovering then
 			toggle()
 		end
-	end)
+	end))
 
 	local BlurTarget = base
 
@@ -1199,146 +1200,149 @@ function MacLib:Window(Settings)
 	function WindowFunctions:GlobalSetting(Settings)
 		hasGlobalSetting = true
 		local GlobalSettingFunctions = {}
-		local globalSetting = Instance.new("TextButton")
-		globalSetting.Name = "GlobalSetting"
-		globalSetting.FontFace = Font.new("rbxasset://fonts/families/SourceSansPro.json")
-		globalSetting.Text = ""
-		globalSetting.TextColor3 = Color3.fromRGB(0, 0, 0)
-		globalSetting.TextSize = 14
-		globalSetting.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-		globalSetting.BackgroundTransparency = 1
-		globalSetting.BorderColor3 = Color3.fromRGB(0, 0, 0)
-		globalSetting.BorderSizePixel = 0
-		globalSetting.Size = UDim2.fromOffset(200, 30)
 
-		local globalSettingToggleUIPadding = Instance.new("UIPadding")
-		globalSettingToggleUIPadding.Name = "GlobalSettingToggleUIPadding"
-		globalSettingToggleUIPadding.PaddingLeft = UDim.new(0, 15)
-		globalSettingToggleUIPadding.Parent = globalSetting
+		task.defer(function()
+			local globalSetting = Instance.new("TextButton")
+			globalSetting.Name = "GlobalSetting"
+			globalSetting.FontFace = Font.new("rbxasset://fonts/families/SourceSansPro.json")
+			globalSetting.Text = ""
+			globalSetting.TextColor3 = Color3.fromRGB(0, 0, 0)
+			globalSetting.TextSize = 14
+			globalSetting.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+			globalSetting.BackgroundTransparency = 1
+			globalSetting.BorderColor3 = Color3.fromRGB(0, 0, 0)
+			globalSetting.BorderSizePixel = 0
+			globalSetting.Size = UDim2.fromOffset(200, 30)
 
-		local settingName = Instance.new("TextLabel")
-		settingName.Name = "SettingName"
-		settingName.FontFace = Font.new(assets.interFont)
-		settingName.Text = Settings.Name
-		settingName.RichText = true
-		settingName.TextColor3 = Color3.fromRGB(255, 255, 255)
-		settingName.TextSize = 13
-		settingName.TextTransparency = 0.5
-		settingName.TextTruncate = Enum.TextTruncate.SplitWord
-		settingName.TextXAlignment = Enum.TextXAlignment.Left
-		settingName.TextYAlignment = Enum.TextYAlignment.Top
-		settingName.AnchorPoint = Vector2.new(0, 0.5)
-		settingName.AutomaticSize = Enum.AutomaticSize.Y
-		settingName.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-		settingName.BackgroundTransparency = 1
-		settingName.BorderColor3 = Color3.fromRGB(0, 0, 0)
-		settingName.BorderSizePixel = 0
-		settingName.Position = UDim2.fromScale(1.3e-07, 0.5)
-		settingName.Size = UDim2.new(1,-40,0,0)
-		settingName.Parent = globalSetting
+			local globalSettingToggleUIPadding = Instance.new("UIPadding")
+			globalSettingToggleUIPadding.Name = "GlobalSettingToggleUIPadding"
+			globalSettingToggleUIPadding.PaddingLeft = UDim.new(0, 15)
+			globalSettingToggleUIPadding.Parent = globalSetting
 
-		local globalSettingToggleUIListLayout = Instance.new("UIListLayout")
-		globalSettingToggleUIListLayout.Name = "GlobalSettingToggleUIListLayout"
-		globalSettingToggleUIListLayout.Padding = UDim.new(0, 10)
-		globalSettingToggleUIListLayout.FillDirection = Enum.FillDirection.Horizontal
-		globalSettingToggleUIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-		globalSettingToggleUIListLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-		globalSettingToggleUIListLayout.Parent = globalSetting
+			local settingName = Instance.new("TextLabel")
+			settingName.Name = "SettingName"
+			settingName.FontFace = Font.new(assets.interFont)
+			settingName.Text = Settings.Name
+			settingName.RichText = true
+			settingName.TextColor3 = Color3.fromRGB(255, 255, 255)
+			settingName.TextSize = 13
+			settingName.TextTransparency = 0.5
+			settingName.TextTruncate = Enum.TextTruncate.SplitWord
+			settingName.TextXAlignment = Enum.TextXAlignment.Left
+			settingName.TextYAlignment = Enum.TextYAlignment.Top
+			settingName.AnchorPoint = Vector2.new(0, 0.5)
+			settingName.AutomaticSize = Enum.AutomaticSize.Y
+			settingName.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+			settingName.BackgroundTransparency = 1
+			settingName.BorderColor3 = Color3.fromRGB(0, 0, 0)
+			settingName.BorderSizePixel = 0
+			settingName.Position = UDim2.fromScale(1.3e-07, 0.5)
+			settingName.Size = UDim2.new(1,-40,0,0)
+			settingName.Parent = globalSetting
 
-		local checkmark = Instance.new("TextLabel")
-		checkmark.Name = "Checkmark"
-		checkmark.FontFace = Font.new(
-			assets.interFont,
-			Enum.FontWeight.Medium,
-			Enum.FontStyle.Normal
-		)
-		checkmark.Text = "✓"
-		checkmark.TextColor3 = Color3.fromRGB(255, 255, 255)
-		checkmark.TextSize = 13
-		checkmark.TextTransparency = 1
-		checkmark.TextXAlignment = Enum.TextXAlignment.Left
-		checkmark.TextYAlignment = Enum.TextYAlignment.Top
-		checkmark.AnchorPoint = Vector2.new(0, 0.5)
-		checkmark.AutomaticSize = Enum.AutomaticSize.Y
-		checkmark.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-		checkmark.BackgroundTransparency = 1
-		checkmark.BorderColor3 = Color3.fromRGB(0, 0, 0)
-		checkmark.BorderSizePixel = 0
-		checkmark.LayoutOrder = -1
-		checkmark.Position = UDim2.fromScale(1.3e-07, 0.5)
-		checkmark.Size = UDim2.fromOffset(-10, 0)
-		checkmark.Parent = globalSetting
+			local globalSettingToggleUIListLayout = Instance.new("UIListLayout")
+			globalSettingToggleUIListLayout.Name = "GlobalSettingToggleUIListLayout"
+			globalSettingToggleUIListLayout.Padding = UDim.new(0, 10)
+			globalSettingToggleUIListLayout.FillDirection = Enum.FillDirection.Horizontal
+			globalSettingToggleUIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+			globalSettingToggleUIListLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+			globalSettingToggleUIListLayout.Parent = globalSetting
 
-		globalSetting.Parent = globalSettings
+			local checkmark = Instance.new("TextLabel")
+			checkmark.Name = "Checkmark"
+			checkmark.FontFace = Font.new(
+				assets.interFont,
+				Enum.FontWeight.Medium,
+				Enum.FontStyle.Normal
+			)
+			checkmark.Text = "✓"
+			checkmark.TextColor3 = Color3.fromRGB(255, 255, 255)
+			checkmark.TextSize = 13
+			checkmark.TextTransparency = 1
+			checkmark.TextXAlignment = Enum.TextXAlignment.Left
+			checkmark.TextYAlignment = Enum.TextYAlignment.Top
+			checkmark.AnchorPoint = Vector2.new(0, 0.5)
+			checkmark.AutomaticSize = Enum.AutomaticSize.Y
+			checkmark.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+			checkmark.BackgroundTransparency = 1
+			checkmark.BorderColor3 = Color3.fromRGB(0, 0, 0)
+			checkmark.BorderSizePixel = 0
+			checkmark.LayoutOrder = -1
+			checkmark.Position = UDim2.fromScale(1.3e-07, 0.5)
+			checkmark.Size = UDim2.fromOffset(-10, 0)
+			checkmark.Parent = globalSetting
 
-		local tweensettings = {
-			duration = 0.2,
-			easingStyle = Enum.EasingStyle.Quint,
-			transparencyIn = 0.2,
-			transparencyOut = 0.5,
-			checkSizeIncrease = 12,
-			checkSizeDecrease = -globalSettingToggleUIListLayout.Padding.Offset,
-			waitTime = 1
-		}
+			globalSetting.Parent = globalSettings
 
-		local tweens = {
-			checkIn = Tween(checkmark, TweenInfo.new(tweensettings.duration, tweensettings.easingStyle), {
-				Size = UDim2.new(checkmark.Size.X.Scale, tweensettings.checkSizeIncrease, checkmark.Size.Y.Scale, checkmark.Size.Y.Offset)
-			}),
-			checkOut = Tween(checkmark, TweenInfo.new(tweensettings.duration, tweensettings.easingStyle),{
-				Size = UDim2.new(checkmark.Size.X.Scale, tweensettings.checkSizeDecrease, checkmark.Size.Y.Scale, checkmark.Size.Y.Offset)
-			}),
-			nameIn = Tween(settingName, TweenInfo.new(tweensettings.duration, tweensettings.easingStyle),{
-				TextTransparency = tweensettings.transparencyIn
-			}),
-			nameOut = Tween(settingName, TweenInfo.new(tweensettings.duration, tweensettings.easingStyle),{
-				TextTransparency = tweensettings.transparencyOut
-			})
-		}
+			local tweensettings = {
+				duration = 0.2,
+				easingStyle = Enum.EasingStyle.Quint,
+				transparencyIn = 0.2,
+				transparencyOut = 0.5,
+				checkSizeIncrease = 12,
+				checkSizeDecrease = -globalSettingToggleUIListLayout.Padding.Offset,
+				waitTime = 1
+			}
 
-		local function Toggle(State)
-			if not State then
-				tweens.checkOut:Play()
-				tweens.nameOut:Play()
-				checkmark:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
-					if checkmark.AbsoluteSize.X <= 0 then
-						checkmark.TextTransparency = 1
-					end
-				end)
-			else
-				tweens.checkIn:Play()
-				tweens.nameIn:Play()
-				checkmark:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
-					if checkmark.AbsoluteSize.X > 0 then
-						checkmark.TextTransparency = 0
-					end
-				end)
+			local tweens = {
+				checkIn = Tween(checkmark, TweenInfo.new(tweensettings.duration, tweensettings.easingStyle), {
+					Size = UDim2.new(checkmark.Size.X.Scale, tweensettings.checkSizeIncrease, checkmark.Size.Y.Scale, checkmark.Size.Y.Offset)
+				}),
+				checkOut = Tween(checkmark, TweenInfo.new(tweensettings.duration, tweensettings.easingStyle),{
+					Size = UDim2.new(checkmark.Size.X.Scale, tweensettings.checkSizeDecrease, checkmark.Size.Y.Scale, checkmark.Size.Y.Offset)
+				}),
+				nameIn = Tween(settingName, TweenInfo.new(tweensettings.duration, tweensettings.easingStyle),{
+					TextTransparency = tweensettings.transparencyIn
+				}),
+				nameOut = Tween(settingName, TweenInfo.new(tweensettings.duration, tweensettings.easingStyle),{
+					TextTransparency = tweensettings.transparencyOut
+				})
+			}
+
+			local function Toggle(State)
+				if not State then
+					tweens.checkOut:Play()
+					tweens.nameOut:Play()
+					checkmark:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+						if checkmark.AbsoluteSize.X <= 0 then
+							checkmark.TextTransparency = 1
+						end
+					end)
+				else
+					tweens.checkIn:Play()
+					tweens.nameIn:Play()
+					checkmark:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+						if checkmark.AbsoluteSize.X > 0 then
+							checkmark.TextTransparency = 0
+						end
+					end)
+				end
 			end
-		end
 
-		local toggled = Settings.Default
-		Toggle(toggled)
-
-		globalSetting.MouseButton1Click:Connect(function()
-			toggled = not toggled
+			local toggled = Settings.Default
 			Toggle(toggled)
 
-			task.spawn(function()
-				if Settings.Callback then
-					Settings.Callback(toggled)
-				end
-				MacLib:AutoSave()
-			end)
+			globalSetting.MouseButton1Click:Connect(_sd(function()
+				toggled = not toggled
+				Toggle(toggled)
+
+				task.spawn(function()
+					if Settings.Callback then
+						Settings.Callback(toggled)
+					end
+					MacLib:AutoSave()
+				end)
+			end))
+
+			function GlobalSettingFunctions:UpdateName(NewName)
+				settingName.Text = NewName
+			end
+
+			function GlobalSettingFunctions:UpdateState(NewState)
+				Toggle(NewState)
+				toggled = NewState
+			end
 		end)
-
-		function GlobalSettingFunctions:UpdateName(NewName)
-			settingName.Text = NewName
-		end
-
-		function GlobalSettingFunctions:UpdateState(NewState)
-			Toggle(NewState)
-			toggled = NewState
-		end
 
 		return GlobalSettingFunctions
 	end
@@ -1736,7 +1740,7 @@ function MacLib:Window(Settings)
 						ChangeState("Idle")
 					end)
 
-					buttonInteract.MouseButton1Click:Connect(Callback)
+					buttonInteract.MouseButton1Click:Connect(_sd(Callback))
 					function ButtonFunctions:UpdateName(Name)
 						buttonInteract.Text = Name
 					end
@@ -1878,7 +1882,7 @@ function MacLib:Window(Settings)
 						NewState(togglebool, ToggleFunctions.Settings.Callback, false)
 					end
 
-					toggle1.MouseButton1Click:Connect(Toggle)
+					toggle1.MouseButton1Click:Connect(_sd(Toggle))
 
 					function ToggleFunctions:Toggle()
 						Toggle()
@@ -2879,7 +2883,7 @@ function MacLib:Window(Settings)
 						dropped = isDropdownOpen
 					end
 
-					interact.MouseButton1Click:Connect(ToggleDropdown)
+					interact.MouseButton1Click:Connect(_sd(ToggleDropdown))
 
 					local function addOption(i, v)
 						local option = Instance.new("TextButton")
@@ -2993,7 +2997,7 @@ function MacLib:Window(Settings)
 
 						local option = OptionObjs[v].Button
 
-						option.MouseButton1Click:Connect(function()
+						option.MouseButton1Click:Connect(_sd(function()
 							local isSelected = table.find(Selected, v) and true or false
 							local newSelected = not isSelected
 
@@ -3021,7 +3025,7 @@ function MacLib:Window(Settings)
 									MacLib:AutoSave()
 								end
 							end)
-						end)
+						end))
 
 						if dropped then
 							dropdown.Size = UDim2.new(1, 0, 0, CalculateDropdownSize())
@@ -4376,10 +4380,10 @@ function MacLib:Window(Settings)
 						transition(false)
 					end
 
-					interact.MouseButton1Click:Connect(colorpickerIn)
+					interact.MouseButton1Click:Connect(_sd(colorpickerIn))
 
-					cancel.MouseButton1Click:Connect(colorpickerOut)
-					confirm.MouseButton1Click:Connect(function()
+					cancel.MouseButton1Click:Connect(_sd(colorpickerOut))
+					confirm.MouseButton1Click:Connect(_sd(function()
 						colorpickerOut()
 						local c = fromHSV(hue, saturation, value)
 						ColorpickerFunctions.Color = Color3.fromRGB(c.r * 255, c.g * 255, c.b * 255)
@@ -4397,7 +4401,7 @@ function MacLib:Window(Settings)
 								MacLib:AutoSave()
 							end)
 						end
-					end)
+					end))
 
 					updateFromSettings()
 
@@ -4820,9 +4824,9 @@ function MacLib:Window(Settings)
 				currentTab.Text = Settings.Name
 			end
 
-			tabSwitcher.MouseButton1Click:Connect(function()
+			tabSwitcher.MouseButton1Click:Connect(_sd(function()
 				SelectCurrentTab()
-			end)
+			end))
 
 			function TabFunctions:Select()
 				SelectCurrentTab()
@@ -4998,7 +5002,8 @@ function MacLib:Window(Settings)
 	function WindowFunctions:Notify(Settings)
 		local NotificationFunctions = {}
 
-		local notification = Instance.new("Frame")
+		task.defer(function()
+			local notification = Instance.new("Frame")
 		notification.Name = "Notification"
 		notification.AnchorPoint = Vector2.new(0.5, 0.5)
 		notification.AutomaticSize = Enum.AutomaticSize.Y
@@ -5159,12 +5164,12 @@ function MacLib:Window(Settings)
 		style()
 
 		if interactable then
-			interactable.MouseButton1Click:Connect(function()
+			interactable.MouseButton1Click:Connect(_sd(function()
 				NotificationFunctions:Cancel()
 				if Settings.Callback then
 					task.spawn(Settings.Callback)
 				end
-			end)
+			end))
 		end
 
 		local AnimateNotification = task.spawn(function()
@@ -5203,6 +5208,7 @@ function MacLib:Window(Settings)
 			out.Completed:Wait()
 			notification:Destroy()
 		end
+		end)
 
 		return NotificationFunctions
 	end
@@ -5370,12 +5376,18 @@ function MacLib:Window(Settings)
 		end
 
 		local function dialogOut()
-			if not dialog.Parent then return end
-			dialog.Parent = dialogCanvas
-			canvasOut:Play()
-			scaleOut:Play()
-			canvasOut.Completed:Wait()
-			dialogCanvas:Destroy()
+			local ok = pcall(function()
+				if not dialog.Parent then return end
+				dialog.Parent = dialogCanvas
+				canvasOut:Play()
+				scaleOut:Play()
+				canvasOut.Completed:Once(function()
+					pcall(function() dialogCanvas:Destroy() end)
+				end)
+			end)
+			if not ok then
+				pcall(function() dialogCanvas:Destroy() end)
+			end
 		end
 
 		for _, v in pairs(Settings.Buttons) do
@@ -5432,14 +5444,13 @@ function MacLib:Window(Settings)
 				end
 			end
 
-			button.MouseButton1Click:Connect(function()
+			button.MouseButton1Click:Connect(_sd(function()
 				if dialogCanvas.GroupTransparency ~= 0 then return end
 				if v.Callback then
 					v.Callback()
 				end
-
 				dialogOut()
-			end)
+			end))
 
 			button.MouseEnter:Connect(function()
 				ChangeState("Hover")
@@ -5466,16 +5477,17 @@ function MacLib:Window(Settings)
 	end
 
 	function WindowFunctions:SetNotificationsState(State)
-		notifications.Visible = State
+		task.defer(function() pcall(function() notifications.Visible = State end) end)
 	end
 
 	function WindowFunctions:GetNotificationsState(State)
-		return notifications.Visible
+		local ok, val = pcall(function() return notifications.Visible end)
+		return ok and val or true
 	end
 
 	function WindowFunctions:SetState(State)
 		windowState = State
-		base.Visible = State
+		task.defer(function() pcall(function() base.Visible = State end) end)
 	end
 
 	function WindowFunctions:GetState()
@@ -5488,16 +5500,18 @@ function MacLib:Window(Settings)
 		if onUnloadCallback then
 			onUnloadCallback()
 		end
-		if activeMinimizerGui then
-			activeMinimizerGui:Destroy()
-			activeMinimizerGui = nil
-		end
-		if keyTimerConnection then
-			keyTimerConnection:Disconnect()
-			keyTimerConnection = nil
-		end
-		macLib:Destroy()
-		unloaded = true
+		task.defer(function()
+			if activeMinimizerGui then
+				pcall(function() activeMinimizerGui:Destroy() end)
+				activeMinimizerGui = nil
+			end
+			if keyTimerConnection then
+				pcall(function() keyTimerConnection:Disconnect() end)
+				keyTimerConnection = nil
+			end
+			pcall(function() macLib:Destroy() end)
+			unloaded = true
+		end)
 	end
 
 	function WindowFunctions.onUnloaded(callback)
@@ -5516,14 +5530,14 @@ function MacLib:Window(Settings)
 		})
 	end
 
-	UserInputService.InputEnded:Connect(function(inp, gpe)
+	UserInputService.InputEnded:Connect(_sd(function(inp, gpe)
 		if gpe then return end
 		if inp.KeyCode == MenuKeybind then
 			ToggleMenu()
 		end
-	end)
+	end))
 
-	minimize.MouseButton1Click:Connect(ToggleMenu)
+	minimize.MouseButton1Click:Connect(_sd(ToggleMenu))
 	exit.MouseButton1Click:Connect(function()
 		WindowFunctions:Dialog({
 			Title = Settings.Title,
@@ -5548,7 +5562,7 @@ function MacLib:Window(Settings)
 
 	function WindowFunctions:SetAcrylicBlurState(State)
 		acrylicBlur = State
-		base.BackgroundTransparency = State and 0.05 or 0.1
+		task.defer(function() pcall(function() base.BackgroundTransparency = State and 0.05 or 0.1 end) end)
 	end
 
 	function WindowFunctions:GetAcrylicBlurState()
@@ -5577,17 +5591,19 @@ function MacLib:Window(Settings)
 	end
 
 	function WindowFunctions:SetSize(Size)
-		base.Size = Size
+		task.defer(function() pcall(function() base.Size = Size end) end)
 	end
 	function WindowFunctions:GetSize(Size)
-		return base.Size
+		local ok, val = pcall(function() return base.Size end)
+		return ok and val or UDim2.fromOffset(865, 650)
 	end
 
 	function WindowFunctions:SetScale(Scale)
-		baseUIScale.Scale = Scale
+		task.defer(function() pcall(function() baseUIScale.Scale = Scale end) end)
 	end
 	function WindowFunctions:GetScale()
-		return baseUIScale.Scale
+		local ok, val = pcall(function() return baseUIScale.Scale end)
+		return ok and val or 1
 	end
 
 	local ClassParser = {
@@ -5709,24 +5725,30 @@ function MacLib:Window(Settings)
 	end
 
 	local function GetGameFolder()
-		-- Определяем старый и новый пути
+		-- База: settings/<PlaceId или CreatorId>; внутри — подпапка на аккаунт (UserId)
 		local placeId = tostring(game.PlaceId)
 		local creatorId = tostring(game.CreatorId)
-		
+		local userId = tostring(LocalPlayer.UserId)
+
 		local oldPath = MacLib.Folder .. "/settings/" .. placeId
 		local newPath = MacLib.Folder .. "/settings/" .. creatorId
 
-		-- 1. ПРОВЕРКА: Если у игрока уже есть папка со старым ID, используем её
+		local baseFolder
 		if isfolder(oldPath) then
-			return oldPath
+			baseFolder = oldPath
+		else
+			if not isfolder(newPath) then
+				makefolder(newPath)
+			end
+			baseFolder = newPath
 		end
 
-		-- 2. Если старой папки нет, работаем с новой (CreatorId)
-		if not isfolder(newPath) then
-			makefolder(newPath)
+		local userFolder = baseFolder .. "/" .. userId
+		if not isfolder(userFolder) then
+			makefolder(userFolder)
 		end
 
-		return newPath
+		return userFolder
 	end
 
 	function MacLib:LoadAutoLoadConfig()
@@ -6068,11 +6090,11 @@ function MacLib:Window(Settings)
 			ChangeState("Default")
 		end)
 
-		button.MouseButton1Click:Connect(function()
+		button.MouseButton1Click:Connect(_sd(function()
 			if not dragging then
 				WindowFunctions:SetState(not WindowFunctions:GetState())
 			end
-		end)
+		end))
 
 		local MinimizerFunctions = {}
 
