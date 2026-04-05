@@ -1,7 +1,6 @@
 local MacLib = { 
 	Options = {}, 
 	Folder = "ApelHub", 
-	ConfigMode = "shared", -- "shared" = one config for all accounts, "perUser" = separate config per account
 	GetService = function(service)
 		return cloneref and cloneref(game:GetService(service)) or game:GetService(service)
 	end
@@ -63,8 +62,53 @@ local function GetGui()
 	return newGui
 end
 
+-- TweenService:Create / :Play часто падают в инжекте: «lacking capability Plugin» — тогда ставим цели сразу.
 local function Tween(instance, tweeninfo, propertytable)
-	return TweenService:Create(instance, tweeninfo, propertytable)
+	local noop = { Disconnect = function() end }
+	if not instance or type(propertytable) ~= "table" then
+		return {
+			Play = function() end,
+			Cancel = function() end,
+			Completed = {
+				Wait = function() end,
+				Connect = function(_, fn)
+					if type(fn) == "function" then task.defer(fn) end
+					return noop
+				end,
+				Once = function(_, fn)
+					if type(fn) == "function" then task.defer(fn) end
+					return noop
+				end,
+			},
+		}
+	end
+	local ok, tw = pcall(function()
+		return TweenService:Create(instance, tweeninfo, propertytable)
+	end)
+	if ok and tw then
+		return tw
+	end
+	return {
+		Play = function()
+			for prop, val in pairs(propertytable) do
+				pcall(function()
+					instance[prop] = val
+				end)
+			end
+		end,
+		Cancel = function() end,
+		Completed = {
+			Wait = function() end,
+			Connect = function(_, fn)
+				if type(fn) == "function" then task.defer(fn) end
+				return noop
+			end,
+			Once = function(_, fn)
+				if type(fn) == "function" then task.defer(fn) end
+				return noop
+			end,
+		},
+	}
 end
 
 --// Library Functions
@@ -1604,24 +1648,6 @@ function MacLib:Window(Settings)
 
 			right.Parent = sidesContainer
 
-			local bottom = Instance.new("Frame")
-			bottom.Name = "Bottom"
-			bottom.AutomaticSize = Enum.AutomaticSize.Y
-			bottom.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-			bottom.BackgroundTransparency = 1
-			bottom.BorderColor3 = Color3.fromRGB(0, 0, 0)
-			bottom.BorderSizePixel = 0
-			bottom.LayoutOrder = 2
-			bottom.Size = UDim2.new(1, 0, 0, 0)
-
-			local bottomUIListLayout = Instance.new("UIListLayout")
-			bottomUIListLayout.Name = "BottomUIListLayout"
-			bottomUIListLayout.Padding = UDim.new(0, 15)
-			bottomUIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-			bottomUIListLayout.Parent = bottom
-
-			bottom.Parent = elementsScrolling
-
 			elementsScrolling.Parent = elements1
 
 			function TabFunctions:Section(Settings)
@@ -1644,10 +1670,8 @@ function MacLib:Window(Settings)
 					section.Parent = right
 				elseif Settings.Side == "Center" then
 					section.Parent = center
-				elseif Settings.Side == "Bottom" then
-					section.Parent = bottom
 				else
-					section.Parent = left
+					section.Parent = left -- По умолчанию левая сторона
 				end
 
 				local sectionUICorner = Instance.new("UICorner")
@@ -5024,34 +5048,6 @@ function MacLib:Window(Settings)
 				end
 			end
 
-			function TabFunctions:InsertConfigModeSection(Side)
-				local modeSection = TabFunctions:Section({ Side = Side or "Right" })
-
-				if isStudio then
-					modeSection:Label({Text = "Config system unavailable."})
-					return
-				end
-
-				modeSection:Header({ Text = "Config Mode" })
-				modeSection:Paragraph({
-					Header = "How it works",
-					Body = "Shared: one config for all accounts on this device.\nPer Account: each Roblox account gets its own config.",
-				})
-				modeSection:Toggle({
-					Name = "Separate config per account",
-					Default = MacLib.ConfigMode == "perUser",
-					Callback = function(v)
-						MacLib.ConfigMode = v and "perUser" or "shared"
-						MacLib:SaveConfigMode()
-						WindowFunctions:Notify({
-							Title = "Config Mode",
-							Description = v and "Configs are now separate per account. Restart to apply." or "Configs are now shared. Restart to apply.",
-						})
-					end,
-					IgnoreConfig = true,
-				})
-			end
-
 			tabs[tabSwitcher] = {
 				tabContent = elements1,
 				tabStroke = tabSwitcherUIStroke,
@@ -5805,59 +5801,13 @@ function MacLib:Window(Settings)
 		return newPath
 	end
 
-	-- ConfigMode persistence (saved in base game folder, not inside config)
-	local function LoadConfigMode()
-		if isStudio or not (isfile and readfile) then return end
-		pcall(function()
-			local baseFolder = GetBaseGameFolder()
-			local modePath = baseFolder .. "/config_mode.txt"
-			warn("[MacLib] LoadConfigMode path: " .. modePath .. " exists: " .. tostring(isfile(modePath)))
-			if isfile(modePath) then
-				local mode = readfile(modePath)
-				warn("[MacLib] LoadConfigMode read: '" .. tostring(mode) .. "'")
-				if mode == "perUser" then
-					MacLib.ConfigMode = "perUser"
-				else
-					MacLib.ConfigMode = "shared"
-				end
-			end
-		end)
-	end
-
-	local function SaveConfigMode()
-		if isStudio or not writefile then return end
-		pcall(function()
-			local baseFolder = GetBaseGameFolder()
-			local modePath = baseFolder .. "/config_mode.txt"
-			warn("[MacLib] SaveConfigMode path: " .. modePath .. " mode: " .. MacLib.ConfigMode)
-			writefile(modePath, MacLib.ConfigMode)
-		end)
-	end
-
-	LoadConfigMode()
-
-	-- Auto-add Config Mode toggle to Global Settings (after LoadConfigMode so Default is correct)
-	task.defer(function()
-		WindowFunctions:GlobalSetting({
-			Name = "Config per account",
-			Default = MacLib.ConfigMode == "perUser",
-			Callback = function(v)
-				MacLib.ConfigMode = v and "perUser" or "shared"
-				MacLib:SaveConfigMode()
-			end
-		})
-	end)
-
 	local function GetGameFolder()
-		if MacLib.ConfigMode == "perUser" then
-			local baseFolder = GetBaseGameFolder()
-			local userFolder = baseFolder .. "/" .. tostring(LocalPlayer.UserId)
-			if not isfolder(userFolder) then
-				makefolder(userFolder)
-			end
-			return userFolder
+		local baseFolder = GetBaseGameFolder()
+		local userFolder = baseFolder .. "/" .. tostring(LocalPlayer.UserId)
+		if not isfolder(userFolder) then
+			makefolder(userFolder)
 		end
-		return GetBaseGameFolder()
+		return userFolder
 	end
 
 	local function EnsureUserAutoloadFile()
@@ -5946,10 +5896,6 @@ function MacLib:Window(Settings)
 
 		MacLib.Folder = Folder;
 		BuildFolderTree()
-	end
-
-	function MacLib:SaveConfigMode()
-		SaveConfigMode()
 	end
 
 	function MacLib:SaveConfig(Path)
