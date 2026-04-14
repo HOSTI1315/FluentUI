@@ -881,10 +881,62 @@ function SkrilyaLib:Window(config)
 
 	MakeDraggable(topbar, mainFrame)
 
-	-- Title with accent dot
+	-- Window control buttons — MacLib style (8px dots, left of title)
+	local controlContainer = Instance.new("Frame")
+	controlContainer.Size = UDim2.fromOffset(36, 10)
+	controlContainer.Position = UDim2.new(0, 14, 0.5, -5)
+	controlContainer.BackgroundTransparency = 1
+	controlContainer.Parent = topbar
+
+	local controlLayout = Instance.new("UIListLayout")
+	controlLayout.FillDirection = Enum.FillDirection.Horizontal
+	controlLayout.Padding = UDim.new(0, 5)
+	controlLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+	controlLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	controlLayout.Parent = controlContainer
+
+	-- Close (red)
+	local closeBtn = Instance.new("TextButton")
+	closeBtn.Size = UDim2.fromOffset(8, 8)
+	closeBtn.BackgroundColor3 = Color3.fromRGB(250, 93, 86)
+	closeBtn.Text = ""
+	closeBtn.AutoButtonColor = false
+	closeBtn.BorderSizePixel = 0
+	closeBtn.LayoutOrder = 1
+	CreateCorner(closeBtn, 999)
+	closeBtn.Parent = controlContainer
+
+	-- Minimize (yellow)
+	local minBtn = Instance.new("TextButton")
+	minBtn.Size = UDim2.fromOffset(8, 8)
+	minBtn.BackgroundColor3 = Color3.fromRGB(252, 190, 57)
+	minBtn.Text = ""
+	minBtn.AutoButtonColor = false
+	minBtn.BorderSizePixel = 0
+	minBtn.LayoutOrder = 2
+	CreateCorner(minBtn, 999)
+	minBtn.Parent = controlContainer
+
+	-- Maximize (green, disabled)
+	local maxBtn = Instance.new("Frame")
+	maxBtn.Size = UDim2.fromOffset(8, 8)
+	maxBtn.BackgroundColor3 = Color3.fromRGB(119, 174, 94)
+	maxBtn.BorderSizePixel = 0
+	maxBtn.LayoutOrder = 3
+	CreateCorner(maxBtn, 999)
+	maxBtn.Parent = controlContainer
+
+	closeBtn.MouseButton1Click:Connect(_sd(function() Window:Unload() end))
+	minBtn.MouseButton1Click:Connect(_sd(function()
+		Window._minimized = true
+		mainFrame.Visible = false
+		if Window._minimizerBtn then Window._minimizerBtn.Visible = true end
+	end))
+
+	-- Title moved right to make room for dots
 	local accentDot = Instance.new("Frame")
 	accentDot.Size = UDim2.fromOffset(6, 6)
-	accentDot.Position = UDim2.new(0, 16, 0.5, -3)
+	accentDot.Position = UDim2.new(0, 60, 0.5, -3)
 	accentDot.BackgroundColor3 = t.Accent
 	accentDot.BorderSizePixel = 0
 	CreateCorner(accentDot, 3)
@@ -892,7 +944,7 @@ function SkrilyaLib:Window(config)
 
 	local titleLabel = Instance.new("TextLabel")
 	titleLabel.Size = UDim2.new(0, 140, 1, 0)
-	titleLabel.Position = UDim2.fromOffset(28, 0)
+	titleLabel.Position = UDim2.fromOffset(72, 0)
 	titleLabel.BackgroundTransparency = 1
 	titleLabel.Text = winTitle
 	titleLabel.TextColor3 = t.TextPrimary
@@ -905,7 +957,7 @@ function SkrilyaLib:Window(config)
 	if winSubtitle ~= "" then
 		local subLabel = Instance.new("TextLabel")
 		subLabel.Size = UDim2.new(0, 60, 1, 0)
-		subLabel.Position = UDim2.fromOffset(28 + titleLabel.Size.X.Offset + 4, 1)
+		subLabel.Position = UDim2.fromOffset(72 + titleLabel.Size.X.Offset + 4, 1)
 		subLabel.BackgroundTransparency = 1
 		subLabel.Text = winSubtitle
 		subLabel.TextColor3 = t.TextDimmed
@@ -916,105 +968,72 @@ function SkrilyaLib:Window(config)
 		registerThemed(subLabel, "TextColor3", "TextDimmed")
 	end
 
-	-- Window control buttons (macOS-inspired dots)
-	local controlContainer = Instance.new("Frame")
-	controlContainer.Size = UDim2.fromOffset(56, 20)
-	controlContainer.Position = UDim2.new(1, -68, 0.5, -10)
-	controlContainer.BackgroundTransparency = 1
-	controlContainer.Parent = topbar
-
-	-- Close button (red dot)
-	local closeBtn = Instance.new("TextButton")
-	closeBtn.Size = UDim2.fromOffset(14, 14)
-	closeBtn.Position = UDim2.fromOffset(36, 3)
-	closeBtn.BackgroundColor3 = t.Error
-	closeBtn.BackgroundTransparency = 0.2
-	closeBtn.Text = ""
-	closeBtn.BorderSizePixel = 0
-	CreateCorner(closeBtn, 7)
-	closeBtn.Parent = controlContainer
-
-	local closeIcon = Instance.new("TextLabel")
-	closeIcon.Size = UDim2.new(1, 0, 1, 0)
-	closeIcon.BackgroundTransparency = 1
-	closeIcon.Text = "×"
-	closeIcon.TextColor3 = t.Error
-	closeIcon.TextTransparency = 1
-	closeIcon.FontFace = t.FontBold
-	closeIcon.TextSize = 12
-	closeIcon.Parent = closeBtn
-
-	closeBtn.MouseEnter:Connect(function()
-		Tween(closeBtn, TI_FAST, {BackgroundTransparency = 0})
-		Tween(closeIcon, TI_FAST, {TextTransparency = 0, TextColor3 = Color3.new(1, 1, 1)})
-	end)
-	closeBtn.MouseLeave:Connect(function()
-		Tween(closeBtn, TI_FAST, {BackgroundTransparency = 0.2})
-		Tween(closeIcon, TI_FAST, {TextTransparency = 1})
-	end)
-	closeBtn.MouseButton1Click:Connect(function() Window:Unload() end)
-
-	-- Minimize button (yellow dot)
-	local minBtn = Instance.new("TextButton")
-	minBtn.Size = UDim2.fromOffset(14, 14)
-	minBtn.Position = UDim2.fromOffset(16, 3)
-	minBtn.BackgroundColor3 = t.Warning
-	minBtn.BackgroundTransparency = 0.2
-	minBtn.Text = ""
-	minBtn.BorderSizePixel = 0
-	CreateCorner(minBtn, 7)
-	minBtn.Parent = controlContainer
-
-	local minIcon = Instance.new("TextLabel")
-	minIcon.Size = UDim2.new(1, 0, 1, -2)
-	minIcon.BackgroundTransparency = 1
-	minIcon.Text = "–"
-	minIcon.TextColor3 = t.Warning
-	minIcon.TextTransparency = 1
-	minIcon.FontFace = t.FontBold
-	minIcon.TextSize = 14
-	minIcon.Parent = minBtn
-
-	minBtn.MouseEnter:Connect(function()
-		Tween(minBtn, TI_FAST, {BackgroundTransparency = 0})
-		Tween(minIcon, TI_FAST, {TextTransparency = 0, TextColor3 = Color3.fromRGB(100, 70, 0)})
-	end)
-	minBtn.MouseLeave:Connect(function()
-		Tween(minBtn, TI_FAST, {BackgroundTransparency = 0.2})
-		Tween(minIcon, TI_FAST, {TextTransparency = 1})
-	end)
-	minBtn.MouseButton1Click:Connect(function()
-		Window._minimized = true
-		mainFrame.Visible = false
-		if Window._minimizerBtn then Window._minimizerBtn.Visible = true end
-	end)
-
 	-- ══════════════════════════════
-	-- KEY EXPIRATION — with dot indicator
+	-- KEY EXPIRATION — in sidebar bottom (MacLib-style UserInfo)
 	-- ══════════════════════════════
 	local keyLabel
+	local keyDot
+
+	-- UserInfo section at bottom of sidebar
+	local userInfo = Instance.new("Frame")
+	userInfo.Name = "UserInfo"
+	userInfo.AnchorPoint = Vector2.new(0, 1)
+	userInfo.Size = UDim2.new(sidebarScale, 0, 0, 56)
+	userInfo.Position = UDim2.new(0, 0, 1, 0)
+	userInfo.BackgroundColor3 = t.SecondaryBackground
+	userInfo.BackgroundTransparency = 0
+	userInfo.BorderSizePixel = 0
+	userInfo.Parent = body
+	registerThemed(userInfo, "BackgroundColor3", "SecondaryBackground")
+
+	-- Content: hub name + key timer stacked (no divider — bg difference is enough)
+	local userInfoContent = Instance.new("Frame")
+	userInfoContent.Size = UDim2.new(1, 0, 1, 0)
+	userInfoContent.BackgroundTransparency = 1
+	userInfoContent.Parent = userInfo
+	CreatePadding(userInfoContent, 8, 10, 12, 12)
+	CreateList(userInfoContent, 3)
+
+	local hubNameLabel = Instance.new("TextLabel")
+	hubNameLabel.Size = UDim2.new(1, 0, 0, 16)
+	hubNameLabel.BackgroundTransparency = 1
+	hubNameLabel.Text = winTitle
+	hubNameLabel.TextColor3 = t.TextPrimary
+	hubNameLabel.TextTransparency = 0.2
+	hubNameLabel.FontFace = FontSemibold()
+	hubNameLabel.TextSize = 13
+	hubNameLabel.TextXAlignment = Enum.TextXAlignment.Left
+	hubNameLabel.LayoutOrder = 1
+	hubNameLabel.Parent = userInfoContent
+
 	if keyExpiration then
-		-- Status dot
-		local keyDot = Instance.new("Frame")
+		-- Key timer row: dot + text
+		local keyRow = Instance.new("Frame")
+		keyRow.Size = UDim2.new(1, 0, 0, 14)
+		keyRow.BackgroundTransparency = 1
+		keyRow.LayoutOrder = 2
+		keyRow.Parent = userInfoContent
+
+		keyDot = Instance.new("Frame")
 		keyDot.Name = "KeyDot"
-		keyDot.Size = UDim2.fromOffset(7, 7)
-		keyDot.Position = UDim2.new(1, -212, 0.5, -3)
+		keyDot.Size = UDim2.fromOffset(6, 6)
+		keyDot.Position = UDim2.fromOffset(0, 4)
 		keyDot.BackgroundColor3 = t.Success
 		keyDot.BorderSizePixel = 0
-		CreateCorner(keyDot, 4)
-		keyDot.Parent = topbar
+		CreateCorner(keyDot, 3)
+		keyDot.Parent = keyRow
 
 		keyLabel = Instance.new("TextLabel")
 		keyLabel.Name = "KeyExpiration"
-		keyLabel.Size = UDim2.new(0, 120, 1, 0)
-		keyLabel.Position = UDim2.new(1, -200, 0, 0)
+		keyLabel.Size = UDim2.new(1, -12, 0, 14)
+		keyLabel.Position = UDim2.fromOffset(10, 0)
 		keyLabel.BackgroundTransparency = 1
 		keyLabel.Text = ""
-		keyLabel.TextColor3 = t.TextSecondary
-		keyLabel.FontFace = t.Font
+		keyLabel.TextColor3 = t.TextDimmed
+		keyLabel.FontFace = FontRegular()
 		keyLabel.TextSize = 11
 		keyLabel.TextXAlignment = Enum.TextXAlignment.Left
-		keyLabel.Parent = topbar
+		keyLabel.Parent = keyRow
 
 		local function updateKeyTimer()
 			pcall(function()
@@ -1026,7 +1045,6 @@ function SkrilyaLib:Window(config)
 				if diff <= 0 then
 					keyLabel.Text = "Key: Expired"
 					keyDot.BackgroundColor3 = t.Error
-					-- Pulse animation for expired
 					Tween(keyDot, TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {BackgroundTransparency = 0.6})
 				elseif diff < 86400 then
 					keyLabel.Text = string.format("Key: %dч %dм", math.floor(diff / 3600), math.floor((diff % 3600) / 60))
@@ -1053,6 +1071,9 @@ function SkrilyaLib:Window(config)
 	function Window:SetKeyTimer(expStr)
 		keyExpiration = expStr
 	end
+
+	-- Shrink sidebar to leave room for UserInfo
+	sidebar.Size = UDim2.new(sidebarScale, 0, 1, -56)
 
 	-- Topbar divider — subtle gradient line
 	local topDiv = Instance.new("Frame")
@@ -1396,6 +1417,7 @@ function SkrilyaLib:Window(config)
 		contentFrame.Visible = false
 		contentFrame.Parent = contentArea
 		CreatePadding(contentFrame, 12, 12, 14, 14)
+		CreateList(contentFrame, 10) -- Stack paragraph + columns vertically
 
 		-- Two column container
 		local colsFrame = Instance.new("Frame")
@@ -1403,6 +1425,7 @@ function SkrilyaLib:Window(config)
 		colsFrame.Size = UDim2.new(1, 0, 0, 0)
 		colsFrame.AutomaticSize = Enum.AutomaticSize.Y
 		colsFrame.BackgroundTransparency = 1
+		colsFrame.LayoutOrder = 1
 		colsFrame.Parent = contentFrame
 
 		local leftCol = Instance.new("Frame")
@@ -1428,6 +1451,7 @@ function SkrilyaLib:Window(config)
 		centerCol.AutomaticSize = Enum.AutomaticSize.Y
 		centerCol.BackgroundTransparency = 1
 		centerCol.Visible = false
+		centerCol.LayoutOrder = 2
 		centerCol.Parent = contentFrame
 		CreateList(centerCol, 8)
 
@@ -1465,17 +1489,16 @@ function SkrilyaLib:Window(config)
 		-- Tab-level paragraph
 		function Tab:AddParagraph(cfg)
 			local pf = Instance.new("Frame")
-			pf.Size = UDim2.new(1, -20, 0, 0)
-			pf.Position = UDim2.fromOffset(10, 0)
+			pf.Size = UDim2.new(1, 0, 0, 0)
 			pf.AutomaticSize = Enum.AutomaticSize.Y
-			pf.BackgroundColor3 = t.SecondaryBackground
+			pf.BackgroundColor3 = t.TertiaryBackground
 			pf.BorderSizePixel = 0
 			pf.LayoutOrder = -1000
-			CreateCorner(pf, 10)
-			CreatePadding(pf, 12, 12, 14, 14)
+			CreateCorner(pf, 8)
+			CreatePadding(pf, 10, 10, 12, 12)
 			CreateList(pf, 4)
 			pf.Parent = contentFrame
-			registerThemed(pf, "BackgroundColor3", "SecondaryBackground")
+			registerThemed(pf, "BackgroundColor3", "TertiaryBackground")
 
 			if cfg.Icon then
 				local icon = Instance.new("ImageLabel")
@@ -2666,7 +2689,13 @@ function SkrilyaLib:Window(config)
 
 					panel = Instance.new("Frame")
 					panel.Size = UDim2.fromOffset(210, 210)
-					panel.Position = UDim2.new(0, frame.AbsolutePosition.X - mainFrame.AbsolutePosition.X, 0, frame.AbsolutePosition.Y - mainFrame.AbsolutePosition.Y + 40)
+					-- Anchor to preview button, not frame
+					local previewAbsX = preview.AbsolutePosition.X - mainFrame.AbsolutePosition.X
+					local previewAbsY = preview.AbsolutePosition.Y - mainFrame.AbsolutePosition.Y
+					-- Position below the preview, clamped to window
+					local panelX = math.clamp(previewAbsX - 180, 10, mainFrame.AbsoluteSize.X - 220)
+					local panelY = math.clamp(previewAbsY + 28, 10, mainFrame.AbsoluteSize.Y - 220)
+					panel.Position = UDim2.fromOffset(panelX, panelY)
 					panel.BackgroundColor3 = t.SecondaryBackground
 					panel.BorderSizePixel = 0
 					panel.ZIndex = 50
