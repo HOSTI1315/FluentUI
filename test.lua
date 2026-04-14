@@ -56,6 +56,39 @@ pcall(function()
 	end
 end)
 
+-- // 2b. ASSETS & FONTS (Inter font + image-based controls like MacLib)
+local InterFont = "rbxassetid://12187365364"
+local Assets = {
+	toggleBackground = "rbxassetid://18772190202",
+	togglerHead = "rbxassetid://18772309008",
+	sliderbar = "rbxassetid://18772615246",
+	sliderhead = "rbxassetid://18772834246",
+	dropdown = "rbxassetid://18865373378",
+	searchIcon = "rbxassetid://86737463322606",
+}
+
+-- Deferred callback wrapper (prevents lag on heavy callbacks)
+local function _sd(fn)
+	return function(...)
+		local a = {...}
+		task.defer(function() fn(unpack(a)) end)
+	end
+end
+
+-- Font helpers (Inter with weight variants)
+local function FontRegular()
+	return Font.new(InterFont, Enum.FontWeight.Regular)
+end
+local function FontMedium()
+	return Font.new(InterFont, Enum.FontWeight.Medium)
+end
+local function FontSemibold()
+	return Font.new(InterFont, Enum.FontWeight.SemiBold)
+end
+local function FontBold()
+	return Font.new(InterFont, Enum.FontWeight.Bold)
+end
+
 -- // 3. THEMES (enhanced with more granular tokens)
 local Themes = {
 	Dark = {
@@ -80,9 +113,9 @@ local Themes = {
 		SliderBg = Color3.fromRGB(42, 42, 56),
 		ShadowColor = Color3.fromRGB(0, 0, 0),
 		HoverOverlay = Color3.fromRGB(255, 255, 255),
-		Font = Enum.Font.GothamMedium,
-		FontBold = Enum.Font.GothamBold,
-		FontSemibold = Enum.Font.GothamSemibold,
+		Font = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium),
+		FontBold = Font.new("rbxassetid://12187365364", Enum.FontWeight.SemiBold),
+		FontSemibold = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium),
 	},
 	Light = {
 		Background = Color3.fromRGB(245, 245, 250),
@@ -106,9 +139,9 @@ local Themes = {
 		SliderBg = Color3.fromRGB(200, 200, 215),
 		ShadowColor = Color3.fromRGB(0, 0, 0),
 		HoverOverlay = Color3.fromRGB(0, 0, 0),
-		Font = Enum.Font.GothamMedium,
-		FontBold = Enum.Font.GothamBold,
-		FontSemibold = Enum.Font.GothamSemibold,
+		Font = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium),
+		FontBold = Font.new("rbxassetid://12187365364", Enum.FontWeight.SemiBold),
+		FontSemibold = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium),
 	},
 }
 
@@ -374,7 +407,7 @@ function SkrilyaLib:Notify(config)
 	titleLbl.BackgroundTransparency = 1
 	titleLbl.Text = config.Title or "Notification"
 	titleLbl.TextColor3 = t.TextPrimary
-	titleLbl.Font = t.FontBold
+	titleLbl.FontFace = t.FontBold
 	titleLbl.TextSize = 13
 	titleLbl.TextXAlignment = Enum.TextXAlignment.Left
 	titleLbl.LayoutOrder = 1
@@ -387,7 +420,7 @@ function SkrilyaLib:Notify(config)
 	descLbl.BackgroundTransparency = 1
 	descLbl.Text = config.Description or ""
 	descLbl.TextColor3 = t.TextSecondary
-	descLbl.Font = t.Font
+	descLbl.FontFace = t.Font
 	descLbl.TextSize = 12
 	descLbl.TextWrapped = true
 	descLbl.TextXAlignment = Enum.TextXAlignment.Left
@@ -663,7 +696,7 @@ function SkrilyaLib:CreateKeySystem(config)
 	titleLbl.BackgroundTransparency = 1
 	titleLbl.Text = config.Title or "Key System"
 	titleLbl.TextColor3 = t.TextPrimary
-	titleLbl.Font = t.FontBold
+	titleLbl.FontFace = t.FontBold
 	titleLbl.TextSize = 18
 	titleLbl.Parent = box
 
@@ -674,7 +707,7 @@ function SkrilyaLib:CreateKeySystem(config)
 		note.BackgroundTransparency = 1
 		note.Text = config.Note
 		note.TextColor3 = t.TextDimmed
-		note.Font = t.Font
+		note.FontFace = t.Font
 		note.TextSize = 12
 		note.Parent = box
 	end
@@ -696,7 +729,7 @@ function SkrilyaLib:CreateKeySystem(config)
 	inputBox.PlaceholderText = "KEY-XXXX-XXXX-XXXX"
 	inputBox.PlaceholderColor3 = t.TextDimmed
 	inputBox.TextColor3 = t.TextPrimary
-	inputBox.Font = t.Font
+	inputBox.FontFace = t.Font
 	inputBox.TextSize = 14
 	inputBox.TextXAlignment = Enum.TextXAlignment.Left
 	inputBox.ClearTextOnFocus = false
@@ -708,7 +741,7 @@ function SkrilyaLib:CreateKeySystem(config)
 	statusLbl.BackgroundTransparency = 1
 	statusLbl.Text = ""
 	statusLbl.TextColor3 = t.Error
-	statusLbl.Font = t.Font
+	statusLbl.FontFace = t.Font
 	statusLbl.TextSize = 12
 	statusLbl.Parent = box
 
@@ -718,7 +751,7 @@ function SkrilyaLib:CreateKeySystem(config)
 	verifyBtn.BackgroundColor3 = t.Accent
 	verifyBtn.Text = "Проверить"
 	verifyBtn.TextColor3 = t.TextPrimary
-	verifyBtn.Font = t.FontBold
+	verifyBtn.FontFace = t.FontBold
 	verifyBtn.TextSize = 14
 	verifyBtn.BorderSizePixel = 0
 	CreateCorner(verifyBtn, 10)
@@ -863,7 +896,7 @@ function SkrilyaLib:Window(config)
 	titleLabel.BackgroundTransparency = 1
 	titleLabel.Text = winTitle
 	titleLabel.TextColor3 = t.TextPrimary
-	titleLabel.Font = t.FontBold
+	titleLabel.FontFace = t.FontBold
 	titleLabel.TextSize = 15
 	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 	titleLabel.Parent = topbar
@@ -876,7 +909,7 @@ function SkrilyaLib:Window(config)
 		subLabel.BackgroundTransparency = 1
 		subLabel.Text = winSubtitle
 		subLabel.TextColor3 = t.TextDimmed
-		subLabel.Font = t.Font
+		subLabel.FontFace = t.Font
 		subLabel.TextSize = 11
 		subLabel.TextXAlignment = Enum.TextXAlignment.Left
 		subLabel.Parent = topbar
@@ -907,7 +940,7 @@ function SkrilyaLib:Window(config)
 	closeIcon.Text = "×"
 	closeIcon.TextColor3 = t.Error
 	closeIcon.TextTransparency = 1
-	closeIcon.Font = t.FontBold
+	closeIcon.FontFace = t.FontBold
 	closeIcon.TextSize = 12
 	closeIcon.Parent = closeBtn
 
@@ -938,7 +971,7 @@ function SkrilyaLib:Window(config)
 	minIcon.Text = "–"
 	minIcon.TextColor3 = t.Warning
 	minIcon.TextTransparency = 1
-	minIcon.Font = t.FontBold
+	minIcon.FontFace = t.FontBold
 	minIcon.TextSize = 14
 	minIcon.Parent = minBtn
 
@@ -978,7 +1011,7 @@ function SkrilyaLib:Window(config)
 		keyLabel.BackgroundTransparency = 1
 		keyLabel.Text = ""
 		keyLabel.TextColor3 = t.TextSecondary
-		keyLabel.Font = t.Font
+		keyLabel.FontFace = t.Font
 		keyLabel.TextSize = 11
 		keyLabel.TextXAlignment = Enum.TextXAlignment.Left
 		keyLabel.Parent = topbar
@@ -1045,10 +1078,10 @@ function SkrilyaLib:Window(config)
 	-- ══════════════════════════════
 	-- SIDEBAR — refined with hover states
 	-- ══════════════════════════════
-	local sidebarWidth = 155
+	local sidebarScale = 0.22 -- ~22% of window width (MacLib uses 0.325)
 	local sidebar = Instance.new("ScrollingFrame")
 	sidebar.Name = "Sidebar"
-	sidebar.Size = UDim2.new(0, sidebarWidth, 1, 0)
+	sidebar.Size = UDim2.new(sidebarScale, 0, 1, 0)
 	sidebar.BackgroundColor3 = t.SecondaryBackground
 	sidebar.BorderSizePixel = 0
 	sidebar.ScrollBarThickness = 2
@@ -1068,18 +1101,19 @@ function SkrilyaLib:Window(config)
 	-- Sidebar divider
 	local sideDiv = Instance.new("Frame")
 	sideDiv.Size = UDim2.new(0, 1, 1, 0)
-	sideDiv.Position = UDim2.fromOffset(sidebarWidth, 0)
-	sideDiv.BackgroundColor3 = t.Divider
-	sideDiv.BackgroundTransparency = 0.4
+	sideDiv.AnchorPoint = Vector2.new(1, 0)
+	sideDiv.Position = UDim2.new(sidebarScale, 0, 0, 0)
+	sideDiv.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	sideDiv.BackgroundTransparency = 0.9
 	sideDiv.BorderSizePixel = 0
 	sideDiv.Parent = body
-	registerThemed(sideDiv, "BackgroundColor3", "Divider")
 
 	-- Content area
 	local contentArea = Instance.new("Frame")
 	contentArea.Name = "ContentArea"
-	contentArea.Size = UDim2.new(1, -(sidebarWidth + 2), 1, 0)
-	contentArea.Position = UDim2.fromOffset(sidebarWidth + 2, 0)
+	contentArea.AnchorPoint = Vector2.new(1, 0)
+	contentArea.Size = UDim2.new(1 - sidebarScale, -1, 1, 0)
+	contentArea.Position = UDim2.new(1, 0, 0, 0)
 	contentArea.BackgroundTransparency = 1
 	contentArea.BorderSizePixel = 0
 	contentArea.Parent = body
@@ -1189,7 +1223,7 @@ function SkrilyaLib:Window(config)
 			lbl.BackgroundTransparency = 1
 			lbl.Text = text
 			lbl.TextColor3 = t.TextDimmed
-			lbl.Font = t.Font
+			lbl.FontFace = t.Font
 			lbl.TextSize = 10
 			lbl.Parent = container
 			return lbl
@@ -1269,7 +1303,7 @@ function SkrilyaLib:Window(config)
 		hdr.BackgroundTransparency = 1
 		hdr.Text = string.upper(name)
 		hdr.TextColor3 = t.TextDimmed
-		hdr.Font = t.FontBold
+		hdr.FontFace = t.FontBold
 		hdr.TextSize = 9
 		hdr.TextXAlignment = Enum.TextXAlignment.Left
 		hdr.LayoutOrder = Window._sidebarOrderCounter * 100
@@ -1319,7 +1353,7 @@ function SkrilyaLib:Window(config)
 		tabLbl.BackgroundTransparency = 1
 		tabLbl.Text = tabName
 		tabLbl.TextColor3 = t.TextSecondary
-		tabLbl.Font = t.Font
+		tabLbl.FontFace = t.Font
 		tabLbl.TextSize = 13
 		tabLbl.TextXAlignment = Enum.TextXAlignment.Left
 		tabLbl.Parent = tabBtn
@@ -1414,12 +1448,12 @@ function SkrilyaLib:Window(config)
 				if isActive then
 					Tween(tab._btn, TI_FAST, {BackgroundTransparency = 0.5})
 					Tween(tab._tabLbl, TI_FAST, {TextColor3 = t.TextPrimary})
-					tab._tabLbl.Font = t.FontBold
+					tab._tabLbl.FontFace = t.FontBold
 					Tween(tab._indicator, TI_MED, {BackgroundTransparency = 0})
 				else
 					Tween(tab._btn, TI_FAST, {BackgroundTransparency = 1})
 					Tween(tab._tabLbl, TI_FAST, {TextColor3 = t.TextSecondary})
-					tab._tabLbl.Font = t.Font
+					tab._tabLbl.FontFace = t.Font
 					Tween(tab._indicator, TI_FAST, {BackgroundTransparency = 1})
 				end
 			end
@@ -1438,7 +1472,6 @@ function SkrilyaLib:Window(config)
 			pf.BorderSizePixel = 0
 			pf.LayoutOrder = -1000
 			CreateCorner(pf, 10)
-			CreateStroke(pf, t.Border, 1, 0.3)
 			CreatePadding(pf, 12, 12, 14, 14)
 			CreateList(pf, 4)
 			pf.Parent = contentFrame
@@ -1459,7 +1492,7 @@ function SkrilyaLib:Window(config)
 			ph.BackgroundTransparency = 1
 			ph.Text = cfg.Title or cfg.Header or ""
 			ph.TextColor3 = t.TextPrimary
-			ph.Font = t.FontBold
+			ph.FontFace = t.FontBold
 			ph.TextSize = 14
 			ph.TextXAlignment = Enum.TextXAlignment.Left
 			ph.LayoutOrder = 1
@@ -1472,7 +1505,7 @@ function SkrilyaLib:Window(config)
 			pb.BackgroundTransparency = 1
 			pb.Text = cfg.Content or cfg.Body or ""
 			pb.TextColor3 = t.TextSecondary
-			pb.Font = t.Font
+			pb.FontFace = t.Font
 			pb.TextSize = 12
 			pb.TextWrapped = true
 			pb.TextXAlignment = Enum.TextXAlignment.Left
@@ -1515,9 +1548,9 @@ function SkrilyaLib:Window(config)
 			sec.BorderSizePixel = 0
 			sec.LayoutOrder = sectionOrder
 			CreateCorner(sec, 10)
-			CreateStroke(sec, t.Border, 1, 0.35)
-			CreatePadding(sec, 12, 12, 12, 12)
-			CreateList(sec, 7)
+			-- NO UIStroke — rely on bg color difference for depth
+			CreatePadding(sec, 10, 10, 12, 12)
+			CreateList(sec, 8)
 			sec.Parent = parent
 			registerThemed(sec, "BackgroundColor3", "SecondaryBackground")
 
@@ -1534,7 +1567,7 @@ function SkrilyaLib:Window(config)
 				secHdr.BackgroundTransparency = 1
 				secHdr.Text = sectionName
 				secHdr.TextColor3 = t.TextPrimary
-				secHdr.Font = t.FontBold
+				secHdr.FontFace = t.FontBold
 				secHdr.TextSize = 13
 				secHdr.TextXAlignment = Enum.TextXAlignment.Left
 				secHdr.Parent = secHdrContainer
@@ -1586,7 +1619,7 @@ function SkrilyaLib:Window(config)
 							tip.BackgroundTransparency = 1
 							tip.Text = "🔒 " .. reason
 							tip.TextColor3 = theme().TextDimmed
-							tip.Font = theme().Font
+							tip.FontFace = theme().Font
 							tip.TextSize = 11
 							tip.ZIndex = 11
 							tip.Parent = ov
@@ -1626,17 +1659,20 @@ function SkrilyaLib:Window(config)
 
 			local function safeCallback(fn, ...)
 				if not fn then return end
-				local ok, err = pcall(fn, ...)
-				if not ok and notifyOnError then
-					SkrilyaLib:Notify({Title = "Callback Error", Description = tostring(err), Type = "Error", Duration = 5})
-				end
+				local args = {...}
+				task.defer(function()
+					local ok, err = pcall(fn, unpack(args))
+					if not ok and notifyOnError then
+						SkrilyaLib:Notify({Title = "Callback Error", Description = tostring(err), Type = "Error", Duration = 5})
+					end
+				end)
 			end
 
 			-- ══════════════════════════════
 			-- // 14. ELEMENTS — visually refined
 			-- ══════════════════════════════
 
-			-- TOGGLE — larger, with glow effect
+			-- TOGGLE — AutomaticSize, AnchorPoint-centered, no card/stroke
 			function Section:Toggle(cfg)
 				elemOrder = elemOrder + 1
 				local hasDesc = cfg.Description and cfg.Description ~= ""
@@ -1644,70 +1680,66 @@ function SkrilyaLib:Window(config)
 
 				local frame = Instance.new("Frame")
 				frame.Name = "Tgl_" .. (cfg.Name or "")
-				frame.Size = UDim2.new(1, 0, 0, hasDesc and 50 or 36)
-				frame.BackgroundColor3 = t.TertiaryBackground
+				frame.Size = UDim2.new(1, 0, 0, 0)
+				frame.AutomaticSize = Enum.AutomaticSize.Y
+				frame.BackgroundTransparency = 1
 				frame.BorderSizePixel = 0
 				frame.LayoutOrder = elemOrder
-				CreateCorner(frame, 8)
 				frame.Parent = sec
-				registerThemed(frame, "BackgroundColor3", "TertiaryBackground")
+				CreatePadding(frame, 4, 4, 0, 0)
+
+				-- Text container (drives auto height)
+				local textContainer = Instance.new("Frame")
+				textContainer.Size = UDim2.new(1, -54, 0, 0)
+				textContainer.AutomaticSize = Enum.AutomaticSize.Y
+				textContainer.BackgroundTransparency = 1
+				textContainer.Parent = frame
+				CreateList(textContainer, 2)
 
 				local lbl = Instance.new("TextLabel")
-				lbl.Size = UDim2.new(1, -64, 0, hasDesc and 20 or 36)
-				lbl.Position = UDim2.fromOffset(12, hasDesc and 6 or 0)
+				lbl.Size = UDim2.new(1, 0, 0, 16)
 				lbl.BackgroundTransparency = 1
 				lbl.Text = cfg.Name or ""
 				lbl.TextColor3 = t.TextPrimary
-				lbl.Font = t.Font
+				lbl.FontFace = t.Font
 				lbl.TextSize = 13
 				lbl.TextXAlignment = Enum.TextXAlignment.Left
-				lbl.Parent = frame
+				lbl.LayoutOrder = 1
+				lbl.Parent = textContainer
 				registerThemed(lbl, "TextColor3", "TextPrimary")
 
 				if hasDesc then
 					local descLbl = Instance.new("TextLabel")
-					descLbl.Size = UDim2.new(1, -64, 0, 14)
-					descLbl.Position = UDim2.fromOffset(12, 28)
+					descLbl.Size = UDim2.new(1, 0, 0, 14)
 					descLbl.BackgroundTransparency = 1
 					descLbl.Text = cfg.Description
 					descLbl.TextColor3 = t.TextDimmed
-					descLbl.Font = t.Font
+					descLbl.FontFace = t.Font
 					descLbl.TextSize = 11
 					descLbl.TextXAlignment = Enum.TextXAlignment.Left
 					descLbl.TextTruncate = Enum.TextTruncate.AtEnd
-					descLbl.Parent = frame
+					descLbl.LayoutOrder = 2
+					descLbl.Parent = textContainer
 					registerThemed(descLbl, "TextColor3", "TextDimmed")
 				end
 
-				-- Toggle switch — 42x22 with 18px circle
-				local switchBg = Instance.new("Frame")
+				-- Toggle switch — image-based (MacLib assets)
+				local switchBg = Instance.new("ImageLabel")
 				switchBg.Size = UDim2.fromOffset(42, 22)
-				switchBg.Position = UDim2.new(1, -54, 0.5, -11)
-				switchBg.BackgroundColor3 = obj.Value and t.Accent or t.ToggleOff
-				switchBg.BorderSizePixel = 0
-				CreateCorner(switchBg, 11)
-				-- Border for depth
-				CreateStroke(switchBg, obj.Value and t.AccentDark or t.ToggleOffBorder, 1, 0.4)
+				switchBg.AnchorPoint = Vector2.new(1, 0.5)
+				switchBg.Position = UDim2.new(1, 0, 0.5, 0)
+				switchBg.BackgroundTransparency = 1
+				switchBg.Image = Assets.toggleBackground
+				switchBg.ImageColor3 = obj.Value and t.Accent or t.ToggleOff
 				switchBg.Parent = frame
 
-				local circle = Instance.new("Frame")
+				local circle = Instance.new("ImageLabel")
 				circle.Size = UDim2.fromOffset(18, 18)
 				circle.Position = obj.Value and UDim2.fromOffset(22, 2) or UDim2.fromOffset(2, 2)
-				circle.BackgroundColor3 = Color3.new(1, 1, 1)
-				circle.BorderSizePixel = 0
-				CreateCorner(circle, 9)
+				circle.BackgroundTransparency = 1
+				circle.Image = Assets.togglerHead
+				circle.ImageColor3 = Color3.new(1, 1, 1)
 				circle.Parent = switchBg
-
-				-- Subtle shadow on circle
-				local circleShadow = Instance.new("Frame")
-				circleShadow.Size = UDim2.fromOffset(18, 18)
-				circleShadow.Position = UDim2.fromOffset(0, 1)
-				circleShadow.BackgroundColor3 = Color3.new(0, 0, 0)
-				circleShadow.BackgroundTransparency = 0.85
-				circleShadow.BorderSizePixel = 0
-				circleShadow.ZIndex = circle.ZIndex - 1
-				CreateCorner(circleShadow, 9)
-				circleShadow.Parent = switchBg
 
 				local clickBtn = Instance.new("TextButton")
 				clickBtn.Size = UDim2.new(1, 0, 1, 0)
@@ -1719,14 +1751,8 @@ function SkrilyaLib:Window(config)
 				obj.Instance = frame
 
 				local function updateVisual()
-					Tween(switchBg, TI_MED, {BackgroundColor3 = obj.Value and t.Accent or t.ToggleOff})
+					Tween(switchBg, TI_MED, {ImageColor3 = obj.Value and t.Accent or t.ToggleOff})
 					Tween(circle, TI_MED, {Position = obj.Value and UDim2.fromOffset(22, 2) or UDim2.fromOffset(2, 2)})
-					Tween(circleShadow, TI_MED, {Position = obj.Value and UDim2.fromOffset(22, 3) or UDim2.fromOffset(2, 3)})
-					-- Update stroke color
-					local stroke = switchBg:FindFirstChildOfClass("UIStroke")
-					if stroke then
-						Tween(stroke, TI_MED, {Color = obj.Value and t.AccentDark or t.ToggleOffBorder})
-					end
 				end
 
 				function obj:SetValue(v)
@@ -1739,12 +1765,12 @@ function SkrilyaLib:Window(config)
 					fireChanged(obj, v)
 				end
 
-				-- Hover
+				-- Hover — subtle highlight only
 				clickBtn.MouseEnter:Connect(function()
-					Tween(frame, TI_FAST, {BackgroundColor3 = t.QuaternaryBackground})
+					Tween(frame, TI_FAST, {BackgroundTransparency = 0.85})
 				end)
 				clickBtn.MouseLeave:Connect(function()
-					Tween(frame, TI_FAST, {BackgroundColor3 = t.TertiaryBackground})
+					Tween(frame, TI_FAST, {BackgroundTransparency = 1})
 				end)
 
 				clickBtn.MouseButton1Click:Connect(function()
@@ -1762,7 +1788,7 @@ function SkrilyaLib:Window(config)
 				return obj
 			end
 
-			-- SLIDER — thicker track, larger thumb, glow
+			-- SLIDER — AutomaticSize, AnchorPoint-centered
 			function Section:Slider(cfg)
 				elemOrder = elemOrder + 1
 				local mn = cfg.Min or 0
@@ -1773,92 +1799,97 @@ function SkrilyaLib:Window(config)
 
 				local frame = Instance.new("Frame")
 				frame.Name = "Sld_" .. (cfg.Name or "")
-				frame.Size = UDim2.new(1, 0, 0, hasDesc and 66 or 52)
-				frame.BackgroundColor3 = t.TertiaryBackground
+				frame.Size = UDim2.new(1, 0, 0, 0)
+				frame.AutomaticSize = Enum.AutomaticSize.Y
+				frame.BackgroundTransparency = 1
 				frame.BorderSizePixel = 0
 				frame.LayoutOrder = elemOrder
-				CreateCorner(frame, 8)
 				frame.Parent = sec
-				registerThemed(frame, "BackgroundColor3", "TertiaryBackground")
+				CreatePadding(frame, 4, 8, 0, 0)
 
-				local nameYOff = hasDesc and 5 or 5
+				-- Top row: name + value
+				local topRow = Instance.new("Frame")
+				topRow.Size = UDim2.new(1, 0, 0, 16)
+				topRow.BackgroundTransparency = 1
+				topRow.Parent = frame
+
 				local lbl = Instance.new("TextLabel")
-				lbl.Size = UDim2.new(1, -56, 0, 18)
-				lbl.Position = UDim2.fromOffset(12, nameYOff)
+				lbl.Size = UDim2.new(1, -50, 0, 16)
 				lbl.BackgroundTransparency = 1
 				lbl.Text = cfg.Name or ""
 				lbl.TextColor3 = t.TextPrimary
-				lbl.Font = t.Font
+				lbl.FontFace = t.Font
 				lbl.TextSize = 13
 				lbl.TextXAlignment = Enum.TextXAlignment.Left
-				lbl.Parent = frame
+				lbl.Parent = topRow
 				registerThemed(lbl, "TextColor3", "TextPrimary")
 
 				if hasDesc then
 					local descLbl = Instance.new("TextLabel")
-					descLbl.Size = UDim2.new(1, -56, 0, 12)
-					descLbl.Position = UDim2.fromOffset(12, 24)
+					descLbl.Size = UDim2.new(1, -50, 0, 12)
+					descLbl.Position = UDim2.fromOffset(0, 18)
 					descLbl.BackgroundTransparency = 1
 					descLbl.Text = cfg.Description
 					descLbl.TextColor3 = t.TextDimmed
-					descLbl.Font = t.Font
+					descLbl.FontFace = t.Font
 					descLbl.TextSize = 10
 					descLbl.TextXAlignment = Enum.TextXAlignment.Left
 					descLbl.TextTruncate = Enum.TextTruncate.AtEnd
-					descLbl.Parent = frame
+					descLbl.Parent = topRow
 					registerThemed(descLbl, "TextColor3", "TextDimmed")
+					topRow.Size = UDim2.new(1, 0, 0, 32)
 				end
 
 				local suffix = cfg.Suffix or ""
 
-				-- Value badge
-				local valBg = Instance.new("Frame")
-				valBg.Size = UDim2.fromOffset(42, 20)
-				valBg.Position = UDim2.new(1, -52, 0, nameYOff - 1)
-				valBg.BackgroundColor3 = t.Accent
-				valBg.BackgroundTransparency = 0.85
-				valBg.BorderSizePixel = 0
-				CreateCorner(valBg, 6)
-				valBg.Parent = frame
-
 				local valLbl = Instance.new("TextLabel")
-				valLbl.Size = UDim2.new(1, 0, 1, 0)
+				valLbl.Size = UDim2.fromOffset(46, 16)
+				valLbl.AnchorPoint = Vector2.new(1, 0)
+				valLbl.Position = UDim2.new(1, 0, 0, 0)
 				valLbl.BackgroundTransparency = 1
 				valLbl.Text = tostring(obj.Value) .. suffix
 				valLbl.TextColor3 = t.Accent
-				valLbl.Font = t.FontBold
+				valLbl.FontFace = t.FontBold
 				valLbl.TextSize = 12
-				valLbl.Parent = valBg
+				valLbl.TextXAlignment = Enum.TextXAlignment.Right
+				valLbl.Parent = topRow
 
-				-- Track — 6px height
-				local trackY = hasDesc and 48 or 36
-				local track = Instance.new("Frame")
-				track.Size = UDim2.new(1, -24, 0, 6)
-				track.Position = UDim2.new(0, 12, 0, trackY)
-				track.BackgroundColor3 = t.SliderBg
-				track.BorderSizePixel = 0
-				CreateCorner(track, 3)
-				track.Parent = frame
-				registerThemed(track, "BackgroundColor3", "SliderBg")
+				-- Track — 4px height, positioned below text
+				local trackContainer = Instance.new("Frame")
+				trackContainer.Size = UDim2.new(1, 0, 0, 14)
+				trackContainer.Position = UDim2.new(0, 0, 0, topRow.Size.Y.Offset + 4)
+				trackContainer.BackgroundTransparency = 1
+				trackContainer.Parent = frame
 
-				local fill = Instance.new("Frame")
+				local track = Instance.new("ImageLabel")
+				track.Size = UDim2.new(1, 0, 0, 6)
+				track.AnchorPoint = Vector2.new(0, 0.5)
+				track.Position = UDim2.new(0, 0, 0.5, 0)
+				track.BackgroundTransparency = 1
+				track.Image = Assets.sliderbar
+				track.ImageColor3 = t.SliderBg
+				track.ScaleType = Enum.ScaleType.Slice
+				track.SliceCenter = Rect.new(6, 6, 6, 6)
+				track.Parent = trackContainer
+
+				local fill = Instance.new("ImageLabel")
 				fill.Size = UDim2.new((obj.Value - mn) / math.max(mx - mn, 1), 0, 1, 0)
-				fill.BackgroundColor3 = t.Accent
-				fill.BorderSizePixel = 0
-				CreateCorner(fill, 3)
+				fill.BackgroundTransparency = 1
+				fill.Image = Assets.sliderbar
+				fill.ImageColor3 = t.Accent
+				fill.ScaleType = Enum.ScaleType.Slice
+				fill.SliceCenter = Rect.new(6, 6, 6, 6)
 				fill.Parent = track
-				-- Gradient on fill
-				ApplyAccentGradient(fill)
 
-				-- Thumb — 14px with shadow
-				local thumb = Instance.new("Frame")
+				-- Thumb — image-based
+				local thumb = Instance.new("ImageLabel")
 				thumb.Size = UDim2.fromOffset(14, 14)
-				thumb.Position = UDim2.new((obj.Value - mn) / math.max(mx - mn, 1), -7, 0.5, -7)
-				thumb.BackgroundColor3 = Color3.new(1, 1, 1)
-				thumb.BorderSizePixel = 0
+				thumb.AnchorPoint = Vector2.new(0.5, 0.5)
+				thumb.Position = UDim2.new((obj.Value - mn) / math.max(mx - mn, 1), 0, 0.5, 0)
+				thumb.BackgroundTransparency = 1
+				thumb.Image = Assets.sliderhead
+				thumb.ImageColor3 = Color3.new(1, 1, 1)
 				thumb.ZIndex = 3
-				CreateCorner(thumb, 7)
-				CreateStroke(thumb, t.Accent, 2, 0.2)
 				thumb.Parent = track
 
 				obj.Instance = frame
@@ -1866,7 +1897,7 @@ function SkrilyaLib:Window(config)
 				local function updateVisual()
 					local pct = math.clamp((obj.Value - mn) / math.max(mx - mn, 1), 0, 1)
 					fill.Size = UDim2.new(pct, 0, 1, 0)
-					thumb.Position = UDim2.new(pct, -7, 0.5, -7)
+					thumb.Position = UDim2.new(pct, 0, 0.5, 0)
 					valLbl.Text = tostring(obj.Value) .. suffix
 				end
 
@@ -1901,7 +1932,7 @@ function SkrilyaLib:Window(config)
 					if obj._locked then return end
 					sliding = true
 					-- Enlarge thumb while sliding
-					Tween(thumb, TI_FAST, {Size = UDim2.fromOffset(16, 16), Position = UDim2.new(thumb.Position.X.Scale, -8, 0.5, -8)})
+					Tween(thumb, TI_FAST, {Size = UDim2.fromOffset(14, 14)})
 					onSlide(Mouse.X)
 				end)
 
@@ -1916,8 +1947,7 @@ function SkrilyaLib:Window(config)
 					if input.UserInputType == Enum.UserInputType.MouseButton1 and sliding then
 						sliding = false
 						-- Return thumb to normal
-						local pct = math.clamp((obj.Value - mn) / math.max(mx - mn, 1), 0, 1)
-						Tween(thumb, TI_FAST, {Size = UDim2.fromOffset(14, 14), Position = UDim2.new(pct, -7, 0.5, -7)})
+						Tween(thumb, TI_FAST, {Size = UDim2.fromOffset(12, 12)})
 					end
 				end)
 				table.insert(_connections, slideEnd)
@@ -1927,14 +1957,14 @@ function SkrilyaLib:Window(config)
 				return obj
 			end
 
-			-- DROPDOWN — with refined visuals
+			-- DROPDOWN — AutomaticSize, clean
 			function Section:Dropdown(cfg)
 				elemOrder = elemOrder + 1
 				local multi = cfg.Multi or false
 				local allowNull = cfg.AllowNull or false
 				local hasSearch = cfg.Search or false
 				local hasDesc = cfg.Description and cfg.Description ~= ""
-				local headerH = hasDesc and 50 or 36
+				local headerH = hasDesc and 40 or 28
 				-- Multi-dropdown Value is ALWAYS a dict: {Name = true, Name2 = true}
 				-- This avoids the MacLib bug where Value=array but Callback=dict
 				local obj = {Value = cfg.Default or (multi and {} or nil)}
@@ -1943,20 +1973,20 @@ function SkrilyaLib:Window(config)
 				frame.Name = "DD_" .. (cfg.Name or "")
 				frame.Size = UDim2.new(1, 0, 0, headerH)
 				frame.BackgroundColor3 = t.TertiaryBackground
+				frame.BackgroundTransparency = 1
 				frame.BorderSizePixel = 0
 				frame.ClipsDescendants = true
 				frame.LayoutOrder = elemOrder
-				CreateCorner(frame, 8)
+				CreateCorner(frame, 6)
 				frame.Parent = sec
-				registerThemed(frame, "BackgroundColor3", "TertiaryBackground")
 
 				local lbl = Instance.new("TextLabel")
 				lbl.Size = UDim2.new(0.5, 0, 0, hasDesc and 20 or headerH)
-				lbl.Position = UDim2.fromOffset(12, hasDesc and 6 or 0)
+				lbl.Position = UDim2.fromOffset(0, hasDesc and 6 or 0)
 				lbl.BackgroundTransparency = 1
 				lbl.Text = cfg.Name or ""
 				lbl.TextColor3 = t.TextPrimary
-				lbl.Font = t.Font
+				lbl.FontFace = t.Font
 				lbl.TextSize = 13
 				lbl.TextXAlignment = Enum.TextXAlignment.Left
 				lbl.Parent = frame
@@ -1965,11 +1995,11 @@ function SkrilyaLib:Window(config)
 				if hasDesc then
 					local descLbl = Instance.new("TextLabel")
 					descLbl.Size = UDim2.new(0.6, 0, 0, 14)
-					descLbl.Position = UDim2.fromOffset(12, 28)
+					descLbl.Position = UDim2.fromOffset(0, 28)
 					descLbl.BackgroundTransparency = 1
 					descLbl.Text = cfg.Description
 					descLbl.TextColor3 = t.TextDimmed
-					descLbl.Font = t.Font
+					descLbl.FontFace = t.Font
 					descLbl.TextSize = 10
 					descLbl.TextXAlignment = Enum.TextXAlignment.Left
 					descLbl.TextTruncate = Enum.TextTruncate.AtEnd
@@ -1983,7 +2013,7 @@ function SkrilyaLib:Window(config)
 				selLbl.Position = UDim2.new(0.5, 0, 0, hasDesc and 6 or 0)
 				selLbl.BackgroundTransparency = 1
 				selLbl.TextColor3 = t.TextSecondary
-				selLbl.Font = t.Font
+				selLbl.FontFace = t.Font
 				selLbl.TextSize = 12
 				selLbl.TextXAlignment = Enum.TextXAlignment.Right
 				selLbl.Parent = frame
@@ -1999,7 +2029,6 @@ function SkrilyaLib:Window(config)
 					searchBg.BackgroundColor3 = t.Background
 					searchBg.BorderSizePixel = 0
 					CreateCorner(searchBg, 6)
-					CreateStroke(searchBg, t.Border, 1, 0.3)
 					searchBg.Parent = frame
 					registerThemed(searchBg, "BackgroundColor3", "Background")
 
@@ -2011,7 +2040,7 @@ function SkrilyaLib:Window(config)
 					searchBox.PlaceholderText = "Search..."
 					searchBox.PlaceholderColor3 = t.TextDimmed
 					searchBox.TextColor3 = t.TextPrimary
-					searchBox.Font = t.Font
+					searchBox.FontFace = t.Font
 					searchBox.TextSize = 11
 					searchBox.TextXAlignment = Enum.TextXAlignment.Left
 					searchBox.ClearTextOnFocus = false
@@ -2086,7 +2115,7 @@ function SkrilyaLib:Window(config)
 						nullBtn.BackgroundTransparency = 0.3
 						nullBtn.Text = "  None"
 						nullBtn.TextColor3 = t.TextDimmed
-						nullBtn.Font = t.Font
+						nullBtn.FontFace = t.Font
 						nullBtn.TextSize = 12
 						nullBtn.TextXAlignment = Enum.TextXAlignment.Left
 						nullBtn.BorderSizePixel = 0
@@ -2114,7 +2143,7 @@ function SkrilyaLib:Window(config)
 						optBtn.BackgroundTransparency = 0.3
 						optBtn.Text = "  " .. tostring(opt)
 						optBtn.TextColor3 = t.TextSecondary
-						optBtn.Font = t.Font
+						optBtn.FontFace = t.Font
 						optBtn.TextSize = 12
 						optBtn.TextXAlignment = Enum.TextXAlignment.Left
 						optBtn.BorderSizePixel = 0
@@ -2206,6 +2235,9 @@ function SkrilyaLib:Window(config)
 						searchFilter = ""
 						if searchBox then searchBox.Text = "" end
 						buildOptions()
+						Tween(frame, TI_FAST, {BackgroundTransparency = 0})
+					else
+						Tween(frame, TI_FAST, {BackgroundTransparency = 1})
 					end
 					Tween(frame, TI_MED, {Size = UDim2.new(1, 0, 0, isOpen and calcOpenHeight() or headerH)})
 				end)
@@ -2288,23 +2320,23 @@ function SkrilyaLib:Window(config)
 
 					local nameLbl = Instance.new("TextLabel")
 					nameLbl.Size = UDim2.new(1, -16, 0, 20)
-					nameLbl.Position = UDim2.fromOffset(12, 8)
+					nameLbl.Position = UDim2.fromOffset(0, 8)
 					nameLbl.BackgroundTransparency = 1
 					nameLbl.Text = cfg.Name or "Button"
 					nameLbl.TextColor3 = t.TextPrimary
-					nameLbl.Font = t.FontBold
+					nameLbl.FontFace = t.FontBold
 					nameLbl.TextSize = 13
 					nameLbl.TextXAlignment = Enum.TextXAlignment.Left
 					nameLbl.Parent = frame
 
 					local descLbl = Instance.new("TextLabel")
 					descLbl.Size = UDim2.new(1, -16, 0, 14)
-					descLbl.Position = UDim2.fromOffset(12, 29)
+					descLbl.Position = UDim2.fromOffset(0, 29)
 					descLbl.BackgroundTransparency = 1
 					descLbl.Text = cfg.Description
 					descLbl.TextColor3 = t.TextPrimary
 					descLbl.TextTransparency = 0.35
-					descLbl.Font = t.Font
+					descLbl.FontFace = t.Font
 					descLbl.TextSize = 11
 					descLbl.TextXAlignment = Enum.TextXAlignment.Left
 					descLbl.TextTruncate = Enum.TextTruncate.AtEnd
@@ -2336,7 +2368,7 @@ function SkrilyaLib:Window(config)
 					btn.BackgroundTransparency = 0.05
 					btn.Text = cfg.Name or "Button"
 					btn.TextColor3 = t.TextPrimary
-					btn.Font = t.FontBold
+					btn.FontFace = t.FontBold
 					btn.TextSize = 13
 					btn.BorderSizePixel = 0
 					btn.LayoutOrder = elemOrder
@@ -2359,7 +2391,7 @@ function SkrilyaLib:Window(config)
 				end
 			end
 
-			-- INPUT
+			-- INPUT — AutomaticSize, clean
 			function Section:Input(cfg)
 				elemOrder = elemOrder + 1
 				local hasDesc = cfg.Description and cfg.Description ~= ""
@@ -2367,49 +2399,48 @@ function SkrilyaLib:Window(config)
 
 				local frame = Instance.new("Frame")
 				frame.Name = "Inp_" .. (cfg.Name or "")
-				frame.Size = UDim2.new(1, 0, 0, hasDesc and 70 or 56)
-				frame.BackgroundColor3 = t.TertiaryBackground
+				frame.Size = UDim2.new(1, 0, 0, 0)
+				frame.AutomaticSize = Enum.AutomaticSize.Y
+				frame.BackgroundTransparency = 1
 				frame.BorderSizePixel = 0
 				frame.LayoutOrder = elemOrder
-				CreateCorner(frame, 8)
 				frame.Parent = sec
-				registerThemed(frame, "BackgroundColor3", "TertiaryBackground")
+				CreatePadding(frame, 2, 2, 0, 0)
+				CreateList(frame, 4)
 
 				local lbl = Instance.new("TextLabel")
-				lbl.Size = UDim2.new(1, -12, 0, 18)
-				lbl.Position = UDim2.fromOffset(12, 6)
+				lbl.Size = UDim2.new(1, 0, 0, 16)
 				lbl.BackgroundTransparency = 1
 				lbl.Text = cfg.Name or ""
 				lbl.TextColor3 = t.TextPrimary
-				lbl.Font = t.Font
+				lbl.FontFace = t.Font
 				lbl.TextSize = 13
 				lbl.TextXAlignment = Enum.TextXAlignment.Left
+				lbl.LayoutOrder = 1
 				lbl.Parent = frame
 				registerThemed(lbl, "TextColor3", "TextPrimary")
 
 				if hasDesc then
 					local descLbl = Instance.new("TextLabel")
-					descLbl.Size = UDim2.new(1, -12, 0, 12)
-					descLbl.Position = UDim2.fromOffset(12, 24)
+					descLbl.Size = UDim2.new(1, 0, 0, 12)
 					descLbl.BackgroundTransparency = 1
 					descLbl.Text = cfg.Description
 					descLbl.TextColor3 = t.TextDimmed
-					descLbl.Font = t.Font
+					descLbl.FontFace = t.Font
 					descLbl.TextSize = 10
 					descLbl.TextXAlignment = Enum.TextXAlignment.Left
 					descLbl.TextTruncate = Enum.TextTruncate.AtEnd
+					descLbl.LayoutOrder = 2
 					descLbl.Parent = frame
 					registerThemed(descLbl, "TextColor3", "TextDimmed")
 				end
 
-				local inputYOff = hasDesc and 40 or 28
 				local inputBg = Instance.new("Frame")
-				inputBg.Size = UDim2.new(1, -16, 0, 24)
-				inputBg.Position = UDim2.new(0, 8, 0, inputYOff)
+				inputBg.Size = UDim2.new(1, 0, 0, 26)
 				inputBg.BackgroundColor3 = t.Background
 				inputBg.BorderSizePixel = 0
+				inputBg.LayoutOrder = 3
 				CreateCorner(inputBg, 6)
-				CreateStroke(inputBg, t.Border, 1, 0.3)
 				inputBg.Parent = frame
 				registerThemed(inputBg, "BackgroundColor3", "Background")
 
@@ -2421,19 +2452,18 @@ function SkrilyaLib:Window(config)
 				textBox.PlaceholderText = cfg.Placeholder or ""
 				textBox.PlaceholderColor3 = t.TextDimmed
 				textBox.TextColor3 = t.TextPrimary
-				textBox.Font = t.Font
+				textBox.FontFace = t.Font
 				textBox.TextSize = 12
 				textBox.TextXAlignment = Enum.TextXAlignment.Left
 				textBox.ClearTextOnFocus = cfg.ClearOnFocus or false
 				textBox.Parent = inputBg
 
-				-- Focus highlight
-				local inputStroke = inputBg:FindFirstChildOfClass("UIStroke")
+				-- Focus highlight via background
 				textBox.Focused:Connect(function()
-					if inputStroke then Tween(inputStroke, TI_FAST, {Color = t.Accent, Transparency = 0}) end
+					Tween(inputBg, TI_FAST, {BackgroundColor3 = t.TertiaryBackground})
 				end)
 				textBox.FocusLost:Connect(function()
-					if inputStroke then Tween(inputStroke, TI_FAST, {Color = t.Border, Transparency = 0.3}) end
+					Tween(inputBg, TI_FAST, {BackgroundColor3 = t.Background})
 					if obj._locked then return end
 					obj.Value = textBox.Text
 					if cfg.Flag then updateFlag(cfg.Flag, obj.Value) end
@@ -2456,7 +2486,7 @@ function SkrilyaLib:Window(config)
 				return obj
 			end
 
-			-- KEYBIND — with pill-style button
+			-- KEYBIND — AutomaticSize, AnchorPoint-centered
 			function Section:Keybind(cfg)
 				elemOrder = elemOrder + 1
 				local hasDesc = cfg.Description and cfg.Description ~= ""
@@ -2464,53 +2494,60 @@ function SkrilyaLib:Window(config)
 
 				local frame = Instance.new("Frame")
 				frame.Name = "KB_" .. (cfg.Name or "")
-				frame.Size = UDim2.new(1, 0, 0, hasDesc and 50 or 36)
-				frame.BackgroundColor3 = t.TertiaryBackground
+				frame.Size = UDim2.new(1, 0, 0, 0)
+				frame.AutomaticSize = Enum.AutomaticSize.Y
+				frame.BackgroundTransparency = 1
 				frame.BorderSizePixel = 0
 				frame.LayoutOrder = elemOrder
-				CreateCorner(frame, 8)
 				frame.Parent = sec
-				registerThemed(frame, "BackgroundColor3", "TertiaryBackground")
+				CreatePadding(frame, 4, 4, 0, 0)
+
+				local textContainer = Instance.new("Frame")
+				textContainer.Size = UDim2.new(1, -64, 0, 0)
+				textContainer.AutomaticSize = Enum.AutomaticSize.Y
+				textContainer.BackgroundTransparency = 1
+				textContainer.Parent = frame
+				CreateList(textContainer, 2)
 
 				local lbl = Instance.new("TextLabel")
-				lbl.Size = UDim2.new(1, -74, 0, hasDesc and 20 or 36)
-				lbl.Position = UDim2.fromOffset(12, hasDesc and 6 or 0)
+				lbl.Size = UDim2.new(1, 0, 0, 16)
 				lbl.BackgroundTransparency = 1
 				lbl.Text = cfg.Name or ""
 				lbl.TextColor3 = t.TextPrimary
-				lbl.Font = t.Font
+				lbl.FontFace = t.Font
 				lbl.TextSize = 13
 				lbl.TextXAlignment = Enum.TextXAlignment.Left
-				lbl.Parent = frame
+				lbl.LayoutOrder = 1
+				lbl.Parent = textContainer
 				registerThemed(lbl, "TextColor3", "TextPrimary")
 
 				if hasDesc then
 					local kbDescLbl = Instance.new("TextLabel")
-					kbDescLbl.Size = UDim2.new(1, -74, 0, 14)
-					kbDescLbl.Position = UDim2.fromOffset(12, 28)
+					kbDescLbl.Size = UDim2.new(1, 0, 0, 12)
 					kbDescLbl.BackgroundTransparency = 1
 					kbDescLbl.Text = cfg.Description
 					kbDescLbl.TextColor3 = t.TextDimmed
-					kbDescLbl.Font = t.Font
+					kbDescLbl.FontFace = t.Font
 					kbDescLbl.TextSize = 10
 					kbDescLbl.TextXAlignment = Enum.TextXAlignment.Left
 					kbDescLbl.TextTruncate = Enum.TextTruncate.AtEnd
-					kbDescLbl.Parent = frame
+					kbDescLbl.LayoutOrder = 2
+					kbDescLbl.Parent = textContainer
 					registerThemed(kbDescLbl, "TextColor3", "TextDimmed")
 				end
 
-				-- Pill-style keybind button
+				-- Keybind button — AnchorPoint centered
 				local keyBtn = Instance.new("TextButton")
-				keyBtn.Size = UDim2.fromOffset(54, 24)
-				keyBtn.Position = UDim2.new(1, -62, 0.5, -12)
-				keyBtn.BackgroundColor3 = t.QuaternaryBackground
+				keyBtn.Size = UDim2.fromOffset(50, 22)
+				keyBtn.AnchorPoint = Vector2.new(1, 0.5)
+				keyBtn.Position = UDim2.new(1, 0, 0.5, 0)
+				keyBtn.BackgroundColor3 = t.TertiaryBackground
 				keyBtn.Text = obj.Value.Name or "None"
 				keyBtn.TextColor3 = t.TextSecondary
-				keyBtn.Font = t.FontBold
+				keyBtn.FontFace = t.FontBold
 				keyBtn.TextSize = 10
 				keyBtn.BorderSizePixel = 0
 				CreateCorner(keyBtn, 6)
-				CreateStroke(keyBtn, t.Border, 1, 0.4)
 				keyBtn.Parent = frame
 
 				local listening = false
@@ -2565,41 +2602,40 @@ function SkrilyaLib:Window(config)
 				return obj
 			end
 
-			-- COLORPICKER
+			-- COLORPICKER — AnchorPoint-centered preview
 			function Section:Colorpicker(cfg)
 				elemOrder = elemOrder + 1
 				local obj = {Value = cfg.Default or Color3.new(1, 1, 1), Alpha = cfg.Alpha or 1}
 
 				local frame = Instance.new("Frame")
 				frame.Name = "Clr_" .. (cfg.Name or "")
-				frame.Size = UDim2.new(1, 0, 0, 36)
-				frame.BackgroundColor3 = t.TertiaryBackground
+				frame.Size = UDim2.new(1, 0, 0, 0)
+				frame.AutomaticSize = Enum.AutomaticSize.Y
+				frame.BackgroundTransparency = 1
 				frame.BorderSizePixel = 0
 				frame.LayoutOrder = elemOrder
-				CreateCorner(frame, 8)
 				frame.Parent = sec
-				registerThemed(frame, "BackgroundColor3", "TertiaryBackground")
+				CreatePadding(frame, 4, 4, 0, 0)
 
 				local lbl = Instance.new("TextLabel")
-				lbl.Size = UDim2.new(1, -50, 1, 0)
-				lbl.Position = UDim2.fromOffset(12, 0)
+				lbl.Size = UDim2.new(1, -36, 0, 16)
 				lbl.BackgroundTransparency = 1
 				lbl.Text = cfg.Name or ""
 				lbl.TextColor3 = t.TextPrimary
-				lbl.Font = t.Font
+				lbl.FontFace = t.Font
 				lbl.TextSize = 13
 				lbl.TextXAlignment = Enum.TextXAlignment.Left
 				lbl.Parent = frame
 				registerThemed(lbl, "TextColor3", "TextPrimary")
 
-				-- Color preview circle
+				-- Color preview — AnchorPoint centered
 				local preview = Instance.new("Frame")
-				preview.Size = UDim2.fromOffset(22, 22)
-				preview.Position = UDim2.new(1, -34, 0.5, -11)
+				preview.Size = UDim2.fromOffset(20, 20)
+				preview.AnchorPoint = Vector2.new(1, 0.5)
+				preview.Position = UDim2.new(1, 0, 0.5, 0)
 				preview.BackgroundColor3 = obj.Value
 				preview.BorderSizePixel = 0
-				CreateCorner(preview, 6)
-				CreateStroke(preview, t.Border, 1, 0.3)
+				CreateCorner(preview, 5)
 				preview.Parent = frame
 
 				local function HSVtoRGB(h, s, v)
@@ -2704,7 +2740,7 @@ function SkrilyaLib:Window(config)
 					hexBox.BackgroundTransparency = 1
 					hexBox.Text = string.format("#%02X%02X%02X", obj.Value.R * 255, obj.Value.G * 255, obj.Value.B * 255)
 					hexBox.TextColor3 = t.TextSecondary
-					hexBox.Font = t.Font
+					hexBox.FontFace = t.Font
 					hexBox.TextSize = 11
 					hexBox.TextXAlignment = Enum.TextXAlignment.Left
 					hexBox.ZIndex = 52
@@ -2725,7 +2761,7 @@ function SkrilyaLib:Window(config)
 					applyBtn.BackgroundColor3 = t.Accent
 					applyBtn.Text = "Apply"
 					applyBtn.TextColor3 = t.TextPrimary
-					applyBtn.Font = t.FontBold
+					applyBtn.FontFace = t.FontBold
 					applyBtn.TextSize = 12
 					applyBtn.BorderSizePixel = 0
 					applyBtn.ZIndex = 51
@@ -2825,7 +2861,7 @@ function SkrilyaLib:Window(config)
 				h.BackgroundTransparency = 1
 				h.Text = cfg.Text or ""
 				h.TextColor3 = t.TextPrimary
-				h.Font = t.FontBold
+				h.FontFace = t.FontBold
 				h.TextSize = 15
 				h.TextXAlignment = Enum.TextXAlignment.Left
 				h.LayoutOrder = elemOrder
@@ -2842,7 +2878,7 @@ function SkrilyaLib:Window(config)
 				l.BackgroundTransparency = 1
 				l.Text = cfg.Text or ""
 				l.TextColor3 = t.TextSecondary
-				l.Font = t.Font
+				l.FontFace = t.Font
 				l.TextSize = 13
 				l.TextXAlignment = Enum.TextXAlignment.Left
 				l.LayoutOrder = elemOrder
@@ -2871,7 +2907,7 @@ function SkrilyaLib:Window(config)
 				ph.BackgroundTransparency = 1
 				ph.Text = cfg.Header or ""
 				ph.TextColor3 = t.TextPrimary
-				ph.Font = t.FontBold
+				ph.FontFace = t.FontBold
 				ph.TextSize = 14
 				ph.TextXAlignment = Enum.TextXAlignment.Left
 				ph.LayoutOrder = 1
@@ -2884,7 +2920,7 @@ function SkrilyaLib:Window(config)
 				pb.BackgroundTransparency = 1
 				pb.Text = cfg.Body or ""
 				pb.TextColor3 = t.TextSecondary
-				pb.Font = t.Font
+				pb.FontFace = t.Font
 				pb.TextSize = 12
 				pb.TextXAlignment = Enum.TextXAlignment.Left
 				pb.TextWrapped = true
@@ -2939,15 +2975,14 @@ function SkrilyaLib:Window(config)
 				container.Parent = sec
 
 				local header = Instance.new("TextButton")
-				header.Size = UDim2.new(1, 0, 0, 30)
+				header.Size = UDim2.new(1, 0, 0, 28)
 				header.BackgroundColor3 = t.TertiaryBackground
-				header.BackgroundTransparency = 0.3
+				header.BackgroundTransparency = 0.7
 				header.BorderSizePixel = 0
 				header.Text = ""
 				header.LayoutOrder = 0
 				CreateCorner(header, 6)
 				header.Parent = container
-				registerThemed(header, "BackgroundColor3", "TertiaryBackground")
 
 				local arrow = Instance.new("TextLabel")
 				arrow.Size = UDim2.fromOffset(16, 30)
@@ -2955,7 +2990,7 @@ function SkrilyaLib:Window(config)
 				arrow.BackgroundTransparency = 1
 				arrow.Text = isExpanded and "▼" or "▶"
 				arrow.TextColor3 = t.TextDimmed
-				arrow.Font = t.Font
+				arrow.FontFace = t.Font
 				arrow.TextSize = 10
 				arrow.Parent = header
 
@@ -2965,7 +3000,7 @@ function SkrilyaLib:Window(config)
 				menuLbl.BackgroundTransparency = 1
 				menuLbl.Text = menuName
 				menuLbl.TextColor3 = t.TextSecondary
-				menuLbl.Font = t.FontBold
+				menuLbl.FontFace = t.FontBold
 				menuLbl.TextSize = 12
 				menuLbl.TextXAlignment = Enum.TextXAlignment.Left
 				menuLbl.Parent = header
@@ -3041,12 +3076,11 @@ function SkrilyaLib:Window(config)
 				kb.BackgroundColor3 = t.QuaternaryBackground
 				kb.Text = nObj.Value and nObj.Value.Name or "None"
 				kb.TextColor3 = t.TextSecondary
-				kb.Font = t.Font
+				kb.FontFace = t.Font
 				kb.TextSize = 9
 				kb.BorderSizePixel = 0
 				kb.ZIndex = 6
 				CreateCorner(kb, 4)
-				CreateStroke(kb, t.Border, 1, 0.5)
 				kb.Parent = parent
 
 				local listening = false
@@ -3100,7 +3134,6 @@ function SkrilyaLib:Window(config)
 				cp.BorderSizePixel = 0
 				cp.ZIndex = 6
 				CreateCorner(cp, 5)
-				CreateStroke(cp, t.Border, 1, 0.3)
 				cp.Parent = parent
 
 				nObj.Instance = cp
@@ -3170,7 +3203,7 @@ function SkrilyaLib:Window(config)
 		dTitle.BackgroundTransparency = 1
 		dTitle.Text = cfg.Title or "Dialog"
 		dTitle.TextColor3 = t.TextPrimary
-		dTitle.Font = t.FontBold
+		dTitle.FontFace = t.FontBold
 		dTitle.TextSize = 15
 		dTitle.TextXAlignment = Enum.TextXAlignment.Left
 		dTitle.ZIndex = 102
@@ -3182,7 +3215,7 @@ function SkrilyaLib:Window(config)
 		dBody.BackgroundTransparency = 1
 		dBody.Text = cfg.Body or ""
 		dBody.TextColor3 = t.TextSecondary
-		dBody.Font = t.Font
+		dBody.FontFace = t.Font
 		dBody.TextSize = 13
 		dBody.TextXAlignment = Enum.TextXAlignment.Left
 		dBody.TextWrapped = true
@@ -3207,7 +3240,7 @@ function SkrilyaLib:Window(config)
 			tb.PlaceholderText = cfg.Placeholder or ""
 			tb.PlaceholderColor3 = t.TextDimmed
 			tb.TextColor3 = t.TextPrimary
-			tb.Font = t.Font
+			tb.FontFace = t.Font
 			tb.TextSize = 13
 			tb.TextXAlignment = Enum.TextXAlignment.Left
 			tb.ZIndex = 103
@@ -3219,7 +3252,7 @@ function SkrilyaLib:Window(config)
 			confirmBtn.BackgroundColor3 = t.Accent
 			confirmBtn.Text = "Confirm"
 			confirmBtn.TextColor3 = t.TextPrimary
-			confirmBtn.Font = t.FontBold
+			confirmBtn.FontFace = t.FontBold
 			confirmBtn.TextSize = 13
 			confirmBtn.BorderSizePixel = 0
 			confirmBtn.ZIndex = 102
@@ -3249,7 +3282,7 @@ function SkrilyaLib:Window(config)
 				b.BackgroundTransparency = (i == 1) and 0 or 0.05
 				b.Text = btnCfg.Text or "OK"
 				b.TextColor3 = t.TextPrimary
-				b.Font = (i == 1) and t.Font or t.FontBold
+				b.FontFace = (i == 1) and t.Font or t.FontBold
 				b.TextSize = 13
 				b.BorderSizePixel = 0
 				b.LayoutOrder = i
@@ -3366,7 +3399,7 @@ function SkrilyaLib:Window(config)
 		mini.BackgroundTransparency = 0.08
 		mini.Text = "S"
 		mini.TextColor3 = t.TextPrimary
-		mini.Font = t.FontBold
+		mini.FontFace = t.FontBold
 		mini.TextSize = 18
 		mini.BorderSizePixel = 0
 		mini.Visible = false
@@ -3477,7 +3510,7 @@ function SkrilyaLib:Window(config)
 		lTitle.BackgroundTransparency = 1
 		lTitle.Text = ls.Title or winTitle
 		lTitle.TextColor3 = t.TextPrimary
-		lTitle.Font = t.FontBold
+		lTitle.FontFace = t.FontBold
 		lTitle.TextSize = 22
 		lTitle.ZIndex = 201
 		lTitle.Parent = loadingGui
@@ -3488,7 +3521,7 @@ function SkrilyaLib:Window(config)
 		lSub.BackgroundTransparency = 1
 		lSub.Text = ls.Subtitle or "Loading..."
 		lSub.TextColor3 = t.TextDimmed
-		lSub.Font = t.Font
+		lSub.FontFace = t.Font
 		lSub.TextSize = 13
 		lSub.ZIndex = 201
 		lSub.Parent = loadingGui
