@@ -56,7 +56,18 @@ pcall(function()
 	end
 end)
 
--- // 2b. ASSETS & FONTS (Inter font + image-based controls like MacLib)
+-- // 2b. DESIGN SYSTEM (strict grid: 4/8/12/16)
+local UI = {
+	Pad = 8,         -- base padding
+	PadLarge = 12,   -- section padding
+	Gap = 6,         -- gap between elements in section
+	GapLarge = 12,   -- gap between sections
+	Radius = 8,      -- default corner radius
+	RadiusLarge = 12, -- window/section radius
+	ControlH = 32,   -- unified control height (buttons, inputs, dropdown headers)
+}
+
+-- // 2c. ASSETS & FONTS
 local InterFont = "rbxassetid://12187365364"
 local Assets = {
 	toggleBackground = "rbxassetid://18772190202",
@@ -67,7 +78,7 @@ local Assets = {
 	searchIcon = "rbxassetid://86737463322606",
 }
 
--- Deferred callback wrapper (prevents lag on heavy callbacks)
+-- Deferred callback wrapper
 local function _sd(fn)
 	return function(...)
 		local a = {...}
@@ -75,7 +86,7 @@ local function _sd(fn)
 	end
 end
 
--- Font helpers (Inter with weight variants)
+-- Font helpers
 local function FontRegular()
 	return Font.new(InterFont, Enum.FontWeight.Regular)
 end
@@ -89,56 +100,40 @@ local function FontBold()
 	return Font.new(InterFont, Enum.FontWeight.Bold)
 end
 
--- // 3. THEMES (enhanced with more granular tokens)
+-- // 3. THEMES — simplified: 2 background levels only
 local Themes = {
 	Dark = {
-		Background = Color3.fromRGB(18, 18, 24),
-		SecondaryBackground = Color3.fromRGB(24, 24, 32),
-		TertiaryBackground = Color3.fromRGB(32, 32, 42),
-		QuaternaryBackground = Color3.fromRGB(38, 38, 50),
+		Background = Color3.fromRGB(15, 15, 15),        -- main window bg
+		Secondary = Color3.fromRGB(22, 22, 22),          -- sidebar, sections
 		Accent = Color3.fromRGB(98, 112, 255),
-		AccentDark = Color3.fromRGB(72, 82, 200),
-		AccentGlow = Color3.fromRGB(120, 132, 255),
-		TextPrimary = Color3.fromRGB(245, 245, 250),
-		TextSecondary = Color3.fromRGB(160, 162, 178),
-		TextDimmed = Color3.fromRGB(88, 90, 108),
-		Divider = Color3.fromRGB(42, 42, 56),
+		TextPrimary = Color3.fromRGB(255, 255, 255),     -- transparency 0.1
+		TextSecondary = Color3.fromRGB(255, 255, 255),   -- transparency 0.5
+		TextDimmed = Color3.fromRGB(255, 255, 255),      -- transparency 0.7
+		Divider = Color3.fromRGB(255, 255, 255),         -- transparency 0.9
 		Success = Color3.fromRGB(72, 220, 120),
-		Warning = Color3.fromRGB(245, 210, 72),
-		Error = Color3.fromRGB(230, 60, 65),
-		Border = Color3.fromRGB(50, 50, 68),
-		BorderLight = Color3.fromRGB(58, 58, 78),
-		ToggleOff = Color3.fromRGB(52, 52, 66),
-		ToggleOffBorder = Color3.fromRGB(62, 62, 78),
-		SliderBg = Color3.fromRGB(42, 42, 56),
-		ShadowColor = Color3.fromRGB(0, 0, 0),
-		HoverOverlay = Color3.fromRGB(255, 255, 255),
+		Warning = Color3.fromRGB(252, 190, 57),
+		Error = Color3.fromRGB(250, 93, 86),
+		ToggleOff = Color3.fromRGB(60, 60, 60),
+		SliderBg = Color3.fromRGB(45, 45, 45),
+		InputBg = Color3.fromRGB(30, 30, 30),
 		Font = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium),
 		FontBold = Font.new("rbxassetid://12187365364", Enum.FontWeight.SemiBold),
 		FontSemibold = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium),
 	},
 	Light = {
-		Background = Color3.fromRGB(245, 245, 250),
-		SecondaryBackground = Color3.fromRGB(252, 252, 255),
-		TertiaryBackground = Color3.fromRGB(235, 235, 242),
-		QuaternaryBackground = Color3.fromRGB(225, 225, 235),
+		Background = Color3.fromRGB(245, 245, 248),
+		Secondary = Color3.fromRGB(255, 255, 255),
 		Accent = Color3.fromRGB(88, 101, 242),
-		AccentDark = Color3.fromRGB(68, 80, 210),
-		AccentGlow = Color3.fromRGB(120, 132, 255),
-		TextPrimary = Color3.fromRGB(16, 16, 28),
-		TextSecondary = Color3.fromRGB(80, 82, 100),
-		TextDimmed = Color3.fromRGB(140, 142, 160),
-		Divider = Color3.fromRGB(215, 215, 228),
+		TextPrimary = Color3.fromRGB(0, 0, 0),
+		TextSecondary = Color3.fromRGB(0, 0, 0),
+		TextDimmed = Color3.fromRGB(0, 0, 0),
+		Divider = Color3.fromRGB(0, 0, 0),
 		Success = Color3.fromRGB(52, 190, 95),
 		Warning = Color3.fromRGB(215, 180, 50),
 		Error = Color3.fromRGB(210, 45, 48),
-		Border = Color3.fromRGB(205, 205, 220),
-		BorderLight = Color3.fromRGB(215, 215, 230),
-		ToggleOff = Color3.fromRGB(185, 185, 198),
-		ToggleOffBorder = Color3.fromRGB(175, 175, 188),
-		SliderBg = Color3.fromRGB(200, 200, 215),
-		ShadowColor = Color3.fromRGB(0, 0, 0),
-		HoverOverlay = Color3.fromRGB(0, 0, 0),
+		ToggleOff = Color3.fromRGB(200, 200, 200),
+		SliderBg = Color3.fromRGB(210, 210, 210),
+		InputBg = Color3.fromRGB(235, 235, 240),
 		Font = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium),
 		FontBold = Font.new("rbxassetid://12187365364", Enum.FontWeight.SemiBold),
 		FontSemibold = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium),
@@ -222,46 +217,8 @@ local function CreateList(parent, padding, direction, hAlign)
 end
 
 -- Creates a subtle inner top gradient to simulate depth/light
-local function CreateInnerGlow(parent, color, direction)
-	local g = Instance.new("UIGradient")
-	g.Color = ColorSequence.new(color or Color3.new(1, 1, 1), color or Color3.new(1, 1, 1))
-	g.Transparency = NumberSequence.new({
-		NumberSequenceKeypoint.new(0, 0.92),
-		NumberSequenceKeypoint.new(0.08, 0.97),
-		NumberSequenceKeypoint.new(1, 1),
-	})
-	g.Rotation = direction or 90
-	g.Parent = parent
-	return g
-end
 
 -- Creates a soft shadow behind a frame (uses layered frames)
-local function CreateShadow(parent, radius, spread, transparency)
-	spread = spread or 8
-	transparency = transparency or 0.7
-	local shadow = Instance.new("Frame")
-	shadow.Name = "_Shadow"
-	shadow.Size = UDim2.new(1, spread * 2, 1, spread * 2)
-	shadow.Position = UDim2.fromOffset(-spread, -spread + 2)
-	shadow.BackgroundColor3 = Color3.new(0, 0, 0)
-	shadow.BackgroundTransparency = transparency
-	shadow.BorderSizePixel = 0
-	shadow.ZIndex = parent.ZIndex - 1
-	CreateCorner(shadow, (radius or 12) + 4)
-	shadow.Parent = parent.Parent
-	-- Second softer layer
-	local shadow2 = Instance.new("Frame")
-	shadow2.Name = "_Shadow2"
-	shadow2.Size = UDim2.new(1, spread * 4, 1, spread * 4)
-	shadow2.Position = UDim2.fromOffset(-spread * 2, -spread * 2 + 4)
-	shadow2.BackgroundColor3 = Color3.new(0, 0, 0)
-	shadow2.BackgroundTransparency = transparency + 0.15
-	shadow2.BorderSizePixel = 0
-	shadow2.ZIndex = parent.ZIndex - 2
-	CreateCorner(shadow2, (radius or 12) + 8)
-	shadow2.Parent = parent.Parent
-	return shadow
-end
 
 local function MakeDraggable(handle, frame)
 	local dragging, dragStart, startPos = false, nil, nil
@@ -310,17 +267,6 @@ local function RippleEffect(button, position)
 end
 
 -- Accent gradient helper: creates a subtle gradient on accent-colored elements
-local function ApplyAccentGradient(parent)
-	local t = theme()
-	local g = Instance.new("UIGradient")
-	g.Color = ColorSequence.new({
-		ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
-		ColorSequenceKeypoint.new(1, Color3.fromRGB(210, 210, 225)),
-	})
-	g.Rotation = 90
-	g.Parent = parent
-	return g
-end
 
 -- // 5. THEME MANAGER
 local function registerThemed(inst, prop, key)
@@ -376,13 +322,13 @@ function SkrilyaLib:Notify(config)
 	local notif = Instance.new("Frame")
 	notif.Size = UDim2.new(1, 0, 0, 0)
 	notif.AutomaticSize = Enum.AutomaticSize.Y
-	notif.BackgroundColor3 = t.SecondaryBackground
+	notif.BackgroundColor3 = t.Secondary
 	notif.BorderSizePixel = 0
 	notif.Position = UDim2.new(1, 20, 0, 0)
 	notif.ClipsDescendants = true
-	CreateCorner(notif, 10)
-	CreateStroke(notif, t.Border, 1, 0.3)
-	registerThemed(notif, "BackgroundColor3", "SecondaryBackground")
+	CreateCorner(notif, UI.Radius)
+	CreateStroke(notif, t.Divider, 1, 0.3)
+	registerThemed(notif, "BackgroundColor3", "Secondary")
 
 	-- Colored accent strip on left
 	local accentStrip = Instance.new("Frame")
@@ -399,7 +345,7 @@ function SkrilyaLib:Notify(config)
 	contentFrame.AutomaticSize = Enum.AutomaticSize.Y
 	contentFrame.BackgroundTransparency = 1
 	contentFrame.Parent = notif
-	CreatePadding(contentFrame, 10, 10, 12, 12)
+	CreatePadding(contentFrame, UI.Pad, UI.Pad, UI.PadLarge, UI.PadLarge)
 	CreateList(contentFrame, 4)
 
 	local titleLbl = Instance.new("TextLabel")
@@ -677,8 +623,8 @@ function SkrilyaLib:CreateKeySystem(config)
 	box.Position = UDim2.new(0.5, -190, 0.5, -130)
 	box.BackgroundColor3 = t.Background
 	box.BorderSizePixel = 0
-	CreateCorner(box, 14)
-	CreateStroke(box, t.Border, 1, 0.2)
+	CreateCorner(box, UI.RadiusLarge)
+	CreateStroke(box, t.Divider, 1, 0.2)
 	box.Parent = gui
 
 	-- Subtle top glow
@@ -715,10 +661,10 @@ function SkrilyaLib:CreateKeySystem(config)
 	local inputBg = Instance.new("Frame")
 	inputBg.Size = UDim2.new(0.78, 0, 0, 40)
 	inputBg.Position = UDim2.new(0.11, 0, 0, 98)
-	inputBg.BackgroundColor3 = t.TertiaryBackground
+	inputBg.BackgroundColor3 = t.Secondary
 	inputBg.BorderSizePixel = 0
-	CreateCorner(inputBg, 10)
-	CreateStroke(inputBg, t.Border, 1, 0.3)
+	CreateCorner(inputBg, UI.Radius)
+	CreateStroke(inputBg, t.Divider, 1, 0.3)
 	inputBg.Parent = box
 
 	local inputBox = Instance.new("TextBox")
@@ -755,7 +701,6 @@ function SkrilyaLib:CreateKeySystem(config)
 	verifyBtn.TextSize = 14
 	verifyBtn.BorderSizePixel = 0
 	CreateCorner(verifyBtn, 10)
-	ApplyAccentGradient(verifyBtn)
 	verifyBtn.Parent = box
 	verifyBtn.ClipsDescendants = true
 
@@ -848,13 +793,12 @@ function SkrilyaLib:Window(config)
 	mainFrame.BackgroundColor3 = t.Background
 	mainFrame.BorderSizePixel = 0
 	mainFrame.ClipsDescendants = true
-	CreateCorner(mainFrame, 12)
-	CreateStroke(mainFrame, t.Border, 1, 0.15)
+	CreateCorner(mainFrame, UI.RadiusLarge)
+	CreateStroke(mainFrame, t.Divider, 1, 0.15)
 	mainFrame.Parent = gui
 	registerThemed(mainFrame, "BackgroundColor3", "Background")
 
 	-- Drop shadow layers
-	CreateShadow(mainFrame, 12, 10, 0.65)
 
 	Window._mainFrame = mainFrame
 	Window._gui = gui
@@ -865,10 +809,10 @@ function SkrilyaLib:Window(config)
 	local topbar = Instance.new("Frame")
 	topbar.Name = "Topbar"
 	topbar.Size = UDim2.new(1, 0, 0, 46)
-	topbar.BackgroundColor3 = t.SecondaryBackground
+	topbar.BackgroundColor3 = t.Secondary
 	topbar.BorderSizePixel = 0
 	topbar.Parent = mainFrame
-	registerThemed(topbar, "BackgroundColor3", "SecondaryBackground")
+	registerThemed(topbar, "BackgroundColor3", "Secondary")
 
 	-- Subtle gradient on topbar for depth
 	local topGrad = Instance.new("UIGradient")
@@ -938,7 +882,7 @@ function SkrilyaLib:Window(config)
 	accentDot.Size = UDim2.fromOffset(6, 6)
 	accentDot.Position = UDim2.new(0, 60, 0.5, -3)
 	accentDot.BackgroundColor3 = t.Accent
-	accentDot.BorderSizePixel = 0
+	accentDot.DividerSizePixel = 0
 	CreateCorner(accentDot, 3)
 	accentDot.Parent = topbar
 
@@ -980,11 +924,11 @@ function SkrilyaLib:Window(config)
 	userInfo.AnchorPoint = Vector2.new(0, 1)
 	userInfo.Size = UDim2.new(sidebarScale, 0, 0, 56)
 	userInfo.Position = UDim2.new(0, 0, 1, 0)
-	userInfo.BackgroundColor3 = t.SecondaryBackground
+	userInfo.BackgroundColor3 = t.Secondary
 	userInfo.BackgroundTransparency = 0
 	userInfo.BorderSizePixel = 0
 	userInfo.Parent = body
-	registerThemed(userInfo, "BackgroundColor3", "SecondaryBackground")
+	registerThemed(userInfo, "BackgroundColor3", "Secondary")
 
 	-- Content: hub name + key timer stacked (no divider — bg difference is enough)
 	local userInfoContent = Instance.new("Frame")
@@ -1019,7 +963,7 @@ function SkrilyaLib:Window(config)
 		keyDot.Size = UDim2.fromOffset(6, 6)
 		keyDot.Position = UDim2.fromOffset(0, 4)
 		keyDot.BackgroundColor3 = t.Success
-		keyDot.BorderSizePixel = 0
+		keyDot.DividerSizePixel = 0
 		CreateCorner(keyDot, 3)
 		keyDot.Parent = keyRow
 
@@ -1103,7 +1047,7 @@ function SkrilyaLib:Window(config)
 	local sidebar = Instance.new("ScrollingFrame")
 	sidebar.Name = "Sidebar"
 	sidebar.Size = UDim2.new(sidebarScale, 0, 1, 0)
-	sidebar.BackgroundColor3 = t.SecondaryBackground
+	sidebar.BackgroundColor3 = t.Secondary
 	sidebar.BorderSizePixel = 0
 	sidebar.ScrollBarThickness = 2
 	sidebar.ScrollBarImageColor3 = t.Accent
@@ -1113,8 +1057,8 @@ function SkrilyaLib:Window(config)
 	sidebar.CanvasSize = UDim2.new(0, 0, 0, 0)
 	sidebar.Parent = body
 	CreateList(sidebar, 2)
-	CreatePadding(sidebar, 10, 10, 8, 8)
-	registerThemed(sidebar, "BackgroundColor3", "SecondaryBackground")
+	CreatePadding(sidebar, UI.Pad, UI.Pad, UI.Pad, UI.Pad)
+	registerThemed(sidebar, "BackgroundColor3", "Secondary")
 
 	Window._sidebar = sidebar
 	Window._sidebarOrderCounter = 0
@@ -1198,10 +1142,10 @@ function SkrilyaLib:Window(config)
 		sb.Name = "StatusBar"
 		sb.Size = UDim2.new(1, 0, 0, 22)
 		sb.Position = UDim2.new(0, 0, 1, -22)
-		sb.BackgroundColor3 = t.SecondaryBackground
+		sb.BackgroundColor3 = t.Secondary
 		sb.BorderSizePixel = 0
 		sb.Parent = mainFrame
-		registerThemed(sb, "BackgroundColor3", "SecondaryBackground")
+		registerThemed(sb, "BackgroundColor3", "Secondary")
 
 		-- Top border line
 		local sbDiv = Instance.new("Frame")
@@ -1233,7 +1177,7 @@ function SkrilyaLib:Window(config)
 			dot.Size = UDim2.fromOffset(4, 4)
 			dot.Position = UDim2.fromOffset(0, 7)
 			dot.BackgroundColor3 = color or t.TextDimmed
-			dot.BorderSizePixel = 0
+			dot.DividerSizePixel = 0
 			CreateCorner(dot, 2)
 			dot.Parent = container
 
@@ -1359,12 +1303,12 @@ function SkrilyaLib:Window(config)
 		local tabBtn = Instance.new("TextButton")
 		tabBtn.Name = "Tab_" .. tabName
 		tabBtn.Size = UDim2.new(1, 0, 0, 32)
-		tabBtn.BackgroundColor3 = t.TertiaryBackground
+		tabBtn.BackgroundColor3 = t.Secondary
 		tabBtn.BackgroundTransparency = 1
 		tabBtn.Text = ""
 		tabBtn.BorderSizePixel = 0
 		tabBtn.LayoutOrder = tabOrder
-		CreateCorner(tabBtn, 8)
+		CreateCorner(tabBtn, UI.Radius)
 		tabBtn.Parent = sidebar
 
 		-- Tab name label (offset for indicator)
@@ -1416,8 +1360,8 @@ function SkrilyaLib:Window(config)
 		contentFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
 		contentFrame.Visible = false
 		contentFrame.Parent = contentArea
-		CreatePadding(contentFrame, 12, 12, 14, 14)
-		CreateList(contentFrame, 10) -- Stack paragraph + columns vertically
+		CreatePadding(contentFrame, UI.Pad, UI.Pad, UI.PadLarge, UI.PadLarge)
+		CreateList(contentFrame, UI.GapLarge) -- Stack paragraph + columns vertically
 
 		-- Two column container
 		local colsFrame = Instance.new("Frame")
@@ -1434,7 +1378,7 @@ function SkrilyaLib:Window(config)
 		leftCol.AutomaticSize = Enum.AutomaticSize.Y
 		leftCol.BackgroundTransparency = 1
 		leftCol.Parent = colsFrame
-		CreateList(leftCol, 8)
+		CreateList(leftCol, UI.Gap)
 
 		local rightCol = Instance.new("Frame")
 		rightCol.Name = "Right"
@@ -1443,7 +1387,7 @@ function SkrilyaLib:Window(config)
 		rightCol.AutomaticSize = Enum.AutomaticSize.Y
 		rightCol.BackgroundTransparency = 1
 		rightCol.Parent = colsFrame
-		CreateList(rightCol, 8)
+		CreateList(rightCol, UI.Gap)
 
 		local centerCol = Instance.new("Frame")
 		centerCol.Name = "Center"
@@ -1453,7 +1397,7 @@ function SkrilyaLib:Window(config)
 		centerCol.Visible = false
 		centerCol.LayoutOrder = 2
 		centerCol.Parent = contentFrame
-		CreateList(centerCol, 8)
+		CreateList(centerCol, UI.Gap)
 
 		Tab._btn = tabBtn
 		Tab._content = contentFrame
@@ -1491,14 +1435,14 @@ function SkrilyaLib:Window(config)
 			local pf = Instance.new("Frame")
 			pf.Size = UDim2.new(1, 0, 0, 0)
 			pf.AutomaticSize = Enum.AutomaticSize.Y
-			pf.BackgroundColor3 = t.TertiaryBackground
+			pf.BackgroundColor3 = t.Secondary
 			pf.BorderSizePixel = 0
 			pf.LayoutOrder = -1000
-			CreateCorner(pf, 8)
-			CreatePadding(pf, 10, 10, 12, 12)
+			CreateCorner(pf, UI.Radius)
+			CreatePadding(pf, UI.Pad, UI.Pad, UI.Pad, UI.Pad)
 			CreateList(pf, 4)
 			pf.Parent = contentFrame
-			registerThemed(pf, "BackgroundColor3", "TertiaryBackground")
+			registerThemed(pf, "BackgroundColor3", "Secondary")
 
 			if cfg.Icon then
 				local icon = Instance.new("ImageLabel")
@@ -1567,15 +1511,15 @@ function SkrilyaLib:Window(config)
 			sec.Name = "Sec_" .. sectionName
 			sec.Size = UDim2.new(1, 0, 0, 0)
 			sec.AutomaticSize = Enum.AutomaticSize.Y
-			sec.BackgroundColor3 = t.SecondaryBackground
+			sec.BackgroundColor3 = t.Secondary
 			sec.BorderSizePixel = 0
 			sec.LayoutOrder = sectionOrder
-			CreateCorner(sec, 10)
+			CreateCorner(sec, UI.Radius)
 			-- NO UIStroke — rely on bg color difference for depth
-			CreatePadding(sec, 10, 10, 12, 12)
-			CreateList(sec, 8)
+			CreatePadding(sec, UI.Pad, UI.Pad, UI.Pad, UI.Pad)
+			CreateList(sec, UI.Gap)
 			sec.Parent = parent
-			registerThemed(sec, "BackgroundColor3", "SecondaryBackground")
+			registerThemed(sec, "BackgroundColor3", "Secondary")
 
 			if sectionName ~= "" then
 				-- Section header with small accent underline
@@ -1995,12 +1939,12 @@ function SkrilyaLib:Window(config)
 				local frame = Instance.new("Frame")
 				frame.Name = "DD_" .. (cfg.Name or "")
 				frame.Size = UDim2.new(1, 0, 0, headerH)
-				frame.BackgroundColor3 = t.TertiaryBackground
+				frame.BackgroundColor3 = t.Secondary
 				frame.BackgroundTransparency = 1
 				frame.BorderSizePixel = 0
 				frame.ClipsDescendants = true
 				frame.LayoutOrder = elemOrder
-				CreateCorner(frame, 6)
+				CreateCorner(frame, UI.Radius)
 				frame.Parent = sec
 
 				local lbl = Instance.new("TextLabel")
@@ -2051,7 +1995,7 @@ function SkrilyaLib:Window(config)
 					searchBg.Position = UDim2.new(0, 6, 0, headerH + 4)
 					searchBg.BackgroundColor3 = t.Background
 					searchBg.BorderSizePixel = 0
-					CreateCorner(searchBg, 6)
+					CreateCorner(searchBg, UI.Radius)
 					searchBg.Parent = frame
 					registerThemed(searchBg, "BackgroundColor3", "Background")
 
@@ -2143,7 +2087,7 @@ function SkrilyaLib:Window(config)
 						nullBtn.TextXAlignment = Enum.TextXAlignment.Left
 						nullBtn.BorderSizePixel = 0
 						nullBtn.LayoutOrder = layoutIdx
-						CreateCorner(nullBtn, 6)
+						CreateCorner(nullBtn, 4)
 						nullBtn.Parent = optionsContainer
 						nullBtn.MouseButton1Click:Connect(function()
 							if obj._locked then return end
@@ -2171,7 +2115,7 @@ function SkrilyaLib:Window(config)
 						optBtn.TextXAlignment = Enum.TextXAlignment.Left
 						optBtn.BorderSizePixel = 0
 						optBtn.LayoutOrder = layoutIdx
-						CreateCorner(optBtn, 6)
+						CreateCorner(optBtn, 4)
 						optBtn.Parent = optionsContainer
 
 						-- Hover
@@ -2328,90 +2272,60 @@ function SkrilyaLib:Window(config)
 				elemOrder = elemOrder + 1
 				local hasDesc = cfg.Description and cfg.Description ~= ""
 
+				-- Single unified button — AutomaticSize.Y, no hardcoded height
+				local btn = Instance.new("TextButton")
+				btn.Name = "Btn_" .. (cfg.Name or "")
+				btn.Size = UDim2.new(1, 0, 0, 0)
+				btn.AutomaticSize = Enum.AutomaticSize.Y
+				btn.BackgroundColor3 = t.Accent
+				btn.BackgroundTransparency = 0.05
+				btn.Text = ""
+				btn.AutoButtonColor = false
+				btn.BorderSizePixel = 0
+				btn.LayoutOrder = elemOrder
+				btn.ClipsDescendants = true
+				CreateCorner(btn, UI.Radius)
+				CreatePadding(btn, UI.Pad, UI.Pad, UI.Pad, UI.Pad)
+				local btnList = CreateList(btn, 2)
+				btnList.VerticalAlignment = Enum.VerticalAlignment.Center
+				btn.Parent = sec
+
+				local nameLbl = Instance.new("TextLabel")
+				nameLbl.Size = UDim2.new(1, 0, 0, 16)
+				nameLbl.BackgroundTransparency = 1
+				nameLbl.Text = cfg.Name or "Button"
+				nameLbl.TextColor3 = t.TextPrimary
+				nameLbl.FontFace = t.FontBold
+				nameLbl.TextSize = 13
+				nameLbl.TextXAlignment = Enum.TextXAlignment.Left
+				nameLbl.Parent = btn
+
 				if hasDesc then
-					local frame = Instance.new("Frame")
-					frame.Name = "Btn_" .. (cfg.Name or "")
-					frame.Size = UDim2.new(1, 0, 0, 50)
-					frame.BackgroundColor3 = t.Accent
-					frame.BackgroundTransparency = 0.05
-					frame.BorderSizePixel = 0
-					frame.LayoutOrder = elemOrder
-					frame.ClipsDescendants = true
-					CreateCorner(frame, 8)
-					ApplyAccentGradient(frame)
-					frame.Parent = sec
-
-					local nameLbl = Instance.new("TextLabel")
-					nameLbl.Size = UDim2.new(1, -16, 0, 20)
-					nameLbl.Position = UDim2.fromOffset(0, 8)
-					nameLbl.BackgroundTransparency = 1
-					nameLbl.Text = cfg.Name or "Button"
-					nameLbl.TextColor3 = t.TextPrimary
-					nameLbl.FontFace = t.FontBold
-					nameLbl.TextSize = 13
-					nameLbl.TextXAlignment = Enum.TextXAlignment.Left
-					nameLbl.Parent = frame
-
 					local descLbl = Instance.new("TextLabel")
-					descLbl.Size = UDim2.new(1, -16, 0, 14)
-					descLbl.Position = UDim2.fromOffset(0, 29)
+					descLbl.Size = UDim2.new(1, 0, 0, 0)
+					descLbl.AutomaticSize = Enum.AutomaticSize.Y
 					descLbl.BackgroundTransparency = 1
 					descLbl.Text = cfg.Description
 					descLbl.TextColor3 = t.TextPrimary
 					descLbl.TextTransparency = 0.35
 					descLbl.FontFace = t.Font
 					descLbl.TextSize = 11
+					descLbl.TextWrapped = true
 					descLbl.TextXAlignment = Enum.TextXAlignment.Left
-					descLbl.TextTruncate = Enum.TextTruncate.AtEnd
-					descLbl.Parent = frame
-
-					local clickBtn = Instance.new("TextButton")
-					clickBtn.Size = UDim2.new(1, 0, 1, 0)
-					clickBtn.BackgroundTransparency = 1
-					clickBtn.Text = ""
-					clickBtn.ZIndex = 5
-					clickBtn.Parent = frame
-
-					clickBtn.MouseEnter:Connect(function() Tween(frame, TI_FAST, {BackgroundTransparency = 0}) end)
-					clickBtn.MouseLeave:Connect(function() Tween(frame, TI_FAST, {BackgroundTransparency = 0.05}) end)
-					clickBtn.MouseButton1Click:Connect(function()
-						RippleEffect(frame, Vector2.new(Mouse.X, Mouse.Y))
-						safeCallback(cfg.Callback)
-					end)
-
-					local obj = {Instance = frame, Value = nil}
-					wrapElement(obj, "Button", nil)
-					function obj:AddKeybind(kcfg) return Section:_addNestedKeybind(frame, kcfg) end
-					return obj
-				else
-					local btn = Instance.new("TextButton")
-					btn.Name = "Btn_" .. (cfg.Name or "")
-					btn.Size = UDim2.new(1, 0, 0, 34)
-					btn.BackgroundColor3 = t.Accent
-					btn.BackgroundTransparency = 0.05
-					btn.Text = cfg.Name or "Button"
-					btn.TextColor3 = t.TextPrimary
-					btn.FontFace = t.FontBold
-					btn.TextSize = 13
-					btn.BorderSizePixel = 0
-					btn.LayoutOrder = elemOrder
-					CreateCorner(btn, 8)
-					ApplyAccentGradient(btn)
-					btn.Parent = sec
-					btn.ClipsDescendants = true
-
-					btn.MouseEnter:Connect(function() Tween(btn, TI_FAST, {BackgroundTransparency = 0}) end)
-					btn.MouseLeave:Connect(function() Tween(btn, TI_FAST, {BackgroundTransparency = 0.05}) end)
-					btn.MouseButton1Click:Connect(function()
-						RippleEffect(btn, Vector2.new(Mouse.X, Mouse.Y))
-						safeCallback(cfg.Callback)
-					end)
-
-					local obj = {Instance = btn, Value = nil}
-					wrapElement(obj, "Button", nil)
-					function obj:AddKeybind(kcfg) return Section:_addNestedKeybind(btn, kcfg) end
-					return obj
+					descLbl.Parent = btn
 				end
+
+				btn.MouseEnter:Connect(function() Tween(btn, TI_FAST, {BackgroundTransparency = 0}) end)
+				btn.MouseLeave:Connect(function() Tween(btn, TI_FAST, {BackgroundTransparency = 0.05}) end)
+				btn.MouseButton1Click:Connect(_sd(function()
+					RippleEffect(btn, Vector2.new(Mouse.X, Mouse.Y))
+					safeCallback(cfg.Callback)
+				end))
+
+				local obj = {Instance = btn, Value = nil}
+				wrapElement(obj, "Button", nil)
+				function obj:AddKeybind(kcfg) return Section:_addNestedKeybind(btn, kcfg) end
+				return obj
 			end
 
 			-- INPUT — AutomaticSize, clean
@@ -2463,7 +2377,7 @@ function SkrilyaLib:Window(config)
 				inputBg.BackgroundColor3 = t.Background
 				inputBg.BorderSizePixel = 0
 				inputBg.LayoutOrder = 3
-				CreateCorner(inputBg, 6)
+				CreateCorner(inputBg, UI.Radius)
 				inputBg.Parent = frame
 				registerThemed(inputBg, "BackgroundColor3", "Background")
 
@@ -2483,7 +2397,7 @@ function SkrilyaLib:Window(config)
 
 				-- Focus highlight via background
 				textBox.Focused:Connect(function()
-					Tween(inputBg, TI_FAST, {BackgroundColor3 = t.TertiaryBackground})
+					Tween(inputBg, TI_FAST, {BackgroundColor3 = t.Secondary})
 				end)
 				textBox.FocusLost:Connect(function()
 					Tween(inputBg, TI_FAST, {BackgroundColor3 = t.Background})
@@ -2564,7 +2478,7 @@ function SkrilyaLib:Window(config)
 				keyBtn.Size = UDim2.fromOffset(50, 22)
 				keyBtn.AnchorPoint = Vector2.new(1, 0.5)
 				keyBtn.Position = UDim2.new(1, 0, 0.5, 0)
-				keyBtn.BackgroundColor3 = t.TertiaryBackground
+				keyBtn.BackgroundColor3 = t.Secondary
 				keyBtn.Text = obj.Value.Name or "None"
 				keyBtn.TextColor3 = t.TextSecondary
 				keyBtn.FontFace = t.FontBold
@@ -2597,7 +2511,7 @@ function SkrilyaLib:Window(config)
 							fireChanged(obj, obj.Value)
 						end
 						listening = false
-						Tween(keyBtn, TI_FAST, {BackgroundColor3 = t.QuaternaryBackground})
+						Tween(keyBtn, TI_FAST, {BackgroundColor3 = t.Secondary})
 						keyBtn.TextColor3 = t.TextSecondary
 						return
 					end
@@ -2696,11 +2610,11 @@ function SkrilyaLib:Window(config)
 					local panelX = math.clamp(previewAbsX - 180, 10, mainFrame.AbsoluteSize.X - 220)
 					local panelY = math.clamp(previewAbsY + 28, 10, mainFrame.AbsoluteSize.Y - 220)
 					panel.Position = UDim2.fromOffset(panelX, panelY)
-					panel.BackgroundColor3 = t.SecondaryBackground
+					panel.BackgroundColor3 = t.Secondary
 					panel.BorderSizePixel = 0
 					panel.ZIndex = 50
-					CreateCorner(panel, 10)
-					CreateStroke(panel, t.Border, 1, 0.2)
+					CreateCorner(panel, UI.Radius)
+					CreateStroke(panel, t.Divider, 1, 0.2)
 					panel.Parent = mainFrame
 
 					local hsvSquare = Instance.new("Frame")
@@ -2757,7 +2671,7 @@ function SkrilyaLib:Window(config)
 					local hexBg = Instance.new("Frame")
 					hexBg.Size = UDim2.new(1, -20, 0, 24)
 					hexBg.Position = UDim2.fromOffset(10, 114)
-					hexBg.BackgroundColor3 = t.TertiaryBackground
+					hexBg.BackgroundColor3 = t.Secondary
 					hexBg.BorderSizePixel = 0
 					hexBg.ZIndex = 51
 					CreateCorner(hexBg, 6)
@@ -2795,7 +2709,6 @@ function SkrilyaLib:Window(config)
 					applyBtn.BorderSizePixel = 0
 					applyBtn.ZIndex = 51
 					CreateCorner(applyBtn, 6)
-					ApplyAccentGradient(applyBtn)
 					applyBtn.Parent = panel
 
 					local function updateColor()
@@ -3005,7 +2918,7 @@ function SkrilyaLib:Window(config)
 
 				local header = Instance.new("TextButton")
 				header.Size = UDim2.new(1, 0, 0, 28)
-				header.BackgroundColor3 = t.TertiaryBackground
+				header.BackgroundColor3 = t.Secondary
 				header.BackgroundTransparency = 0.7
 				header.BorderSizePixel = 0
 				header.Text = ""
@@ -3102,7 +3015,7 @@ function SkrilyaLib:Window(config)
 				local kb = Instance.new("TextButton")
 				kb.Size = UDim2.fromOffset(28, 20)
 				kb.Position = UDim2.new(1, -84, 0.5, -10)
-				kb.BackgroundColor3 = t.QuaternaryBackground
+				kb.BackgroundColor3 = t.Secondary
 				kb.Text = nObj.Value and nObj.Value.Name or "None"
 				kb.TextColor3 = t.TextSecondary
 				kb.FontFace = t.Font
@@ -3130,7 +3043,7 @@ function SkrilyaLib:Window(config)
 							if kcfg.Flag then updateFlag(kcfg.Flag, nObj.Value) end
 						end
 						listening = false
-						Tween(kb, TI_FAST, {BackgroundColor3 = t.QuaternaryBackground})
+						Tween(kb, TI_FAST, {BackgroundColor3 = t.Secondary})
 						return
 					end
 					if nObj.Value and nObj.Value ~= Enum.KeyCode.Unknown and input.KeyCode == nObj.Value then
@@ -3219,11 +3132,11 @@ function SkrilyaLib:Window(config)
 		local box = Instance.new("Frame")
 		box.Size = UDim2.fromOffset(320, cfg.Input and 195 or 170)
 		box.Position = UDim2.new(0.5, -160, 0.5, -90)
-		box.BackgroundColor3 = t.SecondaryBackground
+		box.BackgroundColor3 = t.Secondary
 		box.BorderSizePixel = 0
 		box.ZIndex = 101
-		CreateCorner(box, 12)
-		CreateStroke(box, t.Border, 1, 0.2)
+		CreateCorner(box, UI.RadiusLarge)
+		CreateStroke(box, t.Divider, 1, 0.2)
 		box.Parent = overlay
 
 		local dTitle = Instance.new("TextLabel")
@@ -3255,11 +3168,11 @@ function SkrilyaLib:Window(config)
 			local inputBg = Instance.new("Frame")
 			inputBg.Size = UDim2.new(1, -32, 0, 32)
 			inputBg.Position = UDim2.fromOffset(16, 88)
-			inputBg.BackgroundColor3 = t.TertiaryBackground
+			inputBg.BackgroundColor3 = t.Secondary
 			inputBg.BorderSizePixel = 0
 			inputBg.ZIndex = 102
 			CreateCorner(inputBg, 8)
-			CreateStroke(inputBg, t.Border, 1, 0.3)
+			CreateStroke(inputBg, t.Divider, 1, 0.3)
 			inputBg.Parent = box
 
 			local tb = Instance.new("TextBox")
@@ -3287,7 +3200,6 @@ function SkrilyaLib:Window(config)
 			confirmBtn.ZIndex = 102
 			confirmBtn.ClipsDescendants = true
 			CreateCorner(confirmBtn, 8)
-			ApplyAccentGradient(confirmBtn)
 			confirmBtn.Parent = box
 
 			confirmBtn.MouseButton1Click:Connect(function()
@@ -3307,7 +3219,7 @@ function SkrilyaLib:Window(config)
 			for i, btnCfg in ipairs(cfg.Buttons or {}) do
 				local b = Instance.new("TextButton")
 				b.Size = UDim2.fromOffset(120, 32)
-				b.BackgroundColor3 = (i == 1) and t.TertiaryBackground or t.Accent
+				b.BackgroundColor3 = (i == 1) and t.Secondary or t.Accent
 				b.BackgroundTransparency = (i == 1) and 0 or 0.05
 				b.Text = btnCfg.Text or "OK"
 				b.TextColor3 = t.TextPrimary
@@ -3317,8 +3229,8 @@ function SkrilyaLib:Window(config)
 				b.LayoutOrder = i
 				b.ZIndex = 103
 				b.ClipsDescendants = true
-				CreateCorner(b, 8)
-				if i == 1 then CreateStroke(b, t.Border, 1, 0.3) end
+				CreateCorner(b, UI.Radius)
+				if i == 1 then CreateStroke(b, t.Divider, 1, 0.3) end
 				if i > 1 then ApplyAccentGradient(b) end
 				b.Parent = btnContainer
 				b.MouseButton1Click:Connect(function()
@@ -3433,8 +3345,7 @@ function SkrilyaLib:Window(config)
 		mini.BorderSizePixel = 0
 		mini.Visible = false
 		CreateCorner(mini, 12)
-		CreateStroke(mini, t.AccentDark, 1, 0.3)
-		ApplyAccentGradient(mini)
+		CreateStroke(mini, t.Accent, 1, 0.3)
 		mini.Parent = gui
 
 		MakeDraggable(mini, mini)
@@ -3559,7 +3470,7 @@ function SkrilyaLib:Window(config)
 		local progBg = Instance.new("Frame")
 		progBg.Size = UDim2.new(0.4, 0, 0, 3)
 		progBg.Position = UDim2.new(0.3, 0, 0.38, 68)
-		progBg.BackgroundColor3 = t.TertiaryBackground
+		progBg.BackgroundColor3 = t.Secondary
 		progBg.BorderSizePixel = 0
 		progBg.ZIndex = 201
 		CreateCorner(progBg, 2)
