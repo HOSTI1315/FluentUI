@@ -882,7 +882,7 @@ function SkrilyaLib:Window(config)
 	accentDot.Size = UDim2.fromOffset(6, 6)
 	accentDot.Position = UDim2.new(0, 60, 0.5, -3)
 	accentDot.BackgroundColor3 = t.Accent
-	accentDot.DividerSizePixel = 0
+	accentDot.BorderSizePixel = 0
 	CreateCorner(accentDot, 3)
 	accentDot.Parent = topbar
 
@@ -963,7 +963,7 @@ function SkrilyaLib:Window(config)
 		keyDot.Size = UDim2.fromOffset(6, 6)
 		keyDot.Position = UDim2.fromOffset(0, 4)
 		keyDot.BackgroundColor3 = t.Success
-		keyDot.DividerSizePixel = 0
+		keyDot.BorderSizePixel = 0
 		CreateCorner(keyDot, 3)
 		keyDot.Parent = keyRow
 
@@ -1177,7 +1177,7 @@ function SkrilyaLib:Window(config)
 			dot.Size = UDim2.fromOffset(4, 4)
 			dot.Position = UDim2.fromOffset(0, 7)
 			dot.BackgroundColor3 = color or t.TextDimmed
-			dot.DividerSizePixel = 0
+			dot.BorderSizePixel = 0
 			CreateCorner(dot, 2)
 			dot.Parent = container
 
