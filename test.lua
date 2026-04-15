@@ -2288,11 +2288,9 @@ function SkrilyaLib:Window(config)
 				elemOrder = elemOrder + 1
 				local hasDesc = cfg.Description and cfg.Description ~= ""
 
-				-- Single unified button — AutomaticSize.Y, no hardcoded height
 				local btn = Instance.new("TextButton")
 				btn.Name = "Btn_" .. (cfg.Name or "")
-				btn.Size = UDim2.new(1, 0, 0, 0)
-				btn.AutomaticSize = Enum.AutomaticSize.Y
+				btn.Size = UDim2.new(1, 0, 0, hasDesc and (UI.ControlH + 16) or UI.ControlH)
 				btn.BackgroundColor3 = t.Accent
 				btn.BackgroundTransparency = 0.05
 				btn.Text = ""
@@ -2301,13 +2299,13 @@ function SkrilyaLib:Window(config)
 				btn.LayoutOrder = elemOrder
 				btn.ClipsDescendants = true
 				CreateCorner(btn, UI.Radius)
-				CreatePadding(btn, UI.Pad, UI.Pad, UI.Pad, UI.Pad)
-				local btnList = CreateList(btn, 2)
-				btnList.VerticalAlignment = Enum.VerticalAlignment.Center
 				btn.Parent = sec
 
 				local nameLbl = Instance.new("TextLabel")
-				nameLbl.Size = UDim2.new(1, 0, 0, 16)
+				nameLbl.Size = UDim2.new(1, -UI.Pad * 2, 0, 16)
+				nameLbl.Position = UDim2.fromOffset(UI.Pad, hasDesc and UI.Pad or 0)
+				nameLbl.AnchorPoint = hasDesc and Vector2.new(0, 0) or Vector2.new(0, 0.5)
+				if not hasDesc then nameLbl.Position = UDim2.new(0, UI.Pad, 0.5, 0) end
 				nameLbl.BackgroundTransparency = 1
 				nameLbl.Text = cfg.Name or "Button"
 				nameLbl.TextColor3 = t.TextPrimary
@@ -2318,8 +2316,8 @@ function SkrilyaLib:Window(config)
 
 				if hasDesc then
 					local descLbl = Instance.new("TextLabel")
-					descLbl.Size = UDim2.new(1, 0, 0, 0)
-					descLbl.AutomaticSize = Enum.AutomaticSize.Y
+					descLbl.Size = UDim2.new(1, -UI.Pad * 2, 0, 14)
+					descLbl.Position = UDim2.fromOffset(UI.Pad, UI.Pad + 18)
 					descLbl.BackgroundTransparency = 1
 					descLbl.Text = cfg.Description
 					descLbl.TextColor3 = t.TextPrimary
@@ -2833,12 +2831,14 @@ function SkrilyaLib:Window(config)
 			function Section:Label(cfg)
 				elemOrder = elemOrder + 1
 				local l = Instance.new("TextLabel")
-				l.Size = UDim2.new(1, 0, 0, 20)
+				l.Size = UDim2.new(1, 0, 0, 0)
+				l.AutomaticSize = Enum.AutomaticSize.Y
 				l.BackgroundTransparency = 1
 				l.Text = cfg.Text or ""
 				l.TextColor3 = t.TextSecondary
 				l.FontFace = t.Font
 				l.TextSize = 13
+				l.TextWrapped = true
 				l.TextXAlignment = Enum.TextXAlignment.Left
 				l.LayoutOrder = elemOrder
 				l.Parent = sec
