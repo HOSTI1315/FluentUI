@@ -58,13 +58,21 @@ end)
 
 -- // 2b. DESIGN SYSTEM (strict grid: 4/8/12/16)
 local UI = {
-	Pad = 8,         -- base padding
-	PadLarge = 12,   -- section padding
-	Gap = 6,         -- gap between elements in section
-	GapLarge = 12,   -- gap between sections
-	Radius = 8,      -- default corner radius
+	Pad = 8,          -- base padding
+	PadLarge = 12,    -- section padding
+	Gap = 6,          -- gap between elements in section
+	GapLarge = 12,    -- gap between sections
+	Radius = 8,       -- default corner radius
 	RadiusLarge = 12, -- window/section radius
-	ControlH = 32,   -- unified control height (buttons, inputs, dropdown headers)
+	ControlH = 32,    -- unified control height (buttons, inputs, dropdown headers)
+	InputH = 28,      -- text inputs, dropdown options, keybind buttons
+	SmallH = 20,      -- nested keybind/colorpicker, small controls
+	ElemPadV = 4,     -- vertical padding inside element rows (toggle, slider, etc.)
+	PreviewSize = 20, -- colorpicker preview swatch
+	ThumbSize = 12,   -- slider thumb default
+	ThumbActiveSize = 16, -- slider thumb while dragging
+	TrackH = 6,       -- slider track height
+	ColGap = 6,       -- gap between left/right columns
 }
 
 -- // 2c. ASSETS & FONTS
@@ -267,6 +275,17 @@ local function RippleEffect(button, position)
 end
 
 -- Accent gradient helper: creates a subtle gradient on accent-colored elements
+local function ApplyAccentGradient(inst)
+	pcall(function()
+		local g = Instance.new("UIGradient")
+		g.Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
+			ColorSequenceKeypoint.new(1, Color3.fromRGB(220, 220, 230)),
+		})
+		g.Rotation = 90
+		g.Parent = inst
+	end)
+end
 
 -- // 5. THEME MANAGER
 local function registerThemed(inst, prop, key)
@@ -814,11 +833,11 @@ function SkrilyaLib:Window(config)
 	topbar.Parent = mainFrame
 	registerThemed(topbar, "BackgroundColor3", "Secondary")
 
-	-- Subtle gradient on topbar for depth
+	-- Subtle gradient on topbar for depth (transparency-only, theme-safe)
 	local topGrad = Instance.new("UIGradient")
-	topGrad.Color = ColorSequence.new({
-		ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
-		ColorSequenceKeypoint.new(1, Color3.fromRGB(230, 230, 235)),
+	topGrad.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0),
+		NumberSequenceKeypoint.new(1, 0.08),
 	})
 	topGrad.Rotation = 90
 	topGrad.Parent = topbar
@@ -912,13 +931,57 @@ function SkrilyaLib:Window(config)
 		registerThemed(subLabel, "TextColor3", "TextDimmed")
 	end
 
-	-- ══════════════════════════════
-	-- KEY EXPIRATION — in sidebar bottom (MacLib-style UserInfo)
-	-- ══════════════════════════════
+	-- Forward declarations for key expiration (populated after sidebar)
 	local keyLabel
 	local keyDot
 
-	-- UserInfo section at bottom of sidebar
+	-- Topbar divider — subtle gradient line
+	local topDiv = Instance.new("Frame")
+	topDiv.Size = UDim2.new(1, 0, 0, 1)
+	topDiv.Position = UDim2.fromOffset(0, 46)
+	topDiv.BackgroundColor3 = t.Divider
+	topDiv.BackgroundTransparency = 0.3
+	topDiv.BorderSizePixel = 0
+	topDiv.Parent = mainFrame
+	registerThemed(topDiv, "BackgroundColor3", "Divider")
+
+	-- ══════════════════════════════
+	-- BODY CONTAINER
+	-- ══════════════════════════════
+	local body = Instance.new("Frame")
+	body.Name = "BodyContainer"
+	body.Size = UDim2.new(1, 0, 1, -47)
+	body.Position = UDim2.fromOffset(0, 47)
+	body.BackgroundTransparency = 1
+	body.BorderSizePixel = 0
+	body.Parent = mainFrame
+
+	-- ══════════════════════════════
+	-- SIDEBAR — refined with hover states
+	-- ══════════════════════════════
+	local sidebarScale = 0.22 -- ~22% of window width (MacLib uses 0.325)
+	local sidebar = Instance.new("ScrollingFrame")
+	sidebar.Name = "Sidebar"
+	sidebar.Size = UDim2.new(sidebarScale, 0, 1, -56)
+	sidebar.BackgroundColor3 = t.Secondary
+	sidebar.BorderSizePixel = 0
+	sidebar.ScrollBarThickness = 2
+	sidebar.ScrollBarImageColor3 = t.Accent
+	sidebar.ScrollBarImageTransparency = 0.6
+	sidebar.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	sidebar.ScrollingDirection = Enum.ScrollingDirection.Y
+	sidebar.CanvasSize = UDim2.new(0, 0, 0, 0)
+	sidebar.Parent = body
+	CreateList(sidebar, 2)
+	CreatePadding(sidebar, UI.Pad, UI.Pad, UI.Pad, UI.Pad)
+	registerThemed(sidebar, "BackgroundColor3", "Secondary")
+
+	Window._sidebar = sidebar
+	Window._sidebarOrderCounter = 0
+
+	-- ══════════════════════════════
+	-- KEY EXPIRATION — in sidebar bottom (MacLib-style UserInfo)
+	-- ══════════════════════════════
 	local userInfo = Instance.new("Frame")
 	userInfo.Name = "UserInfo"
 	userInfo.AnchorPoint = Vector2.new(0, 1)
@@ -935,7 +998,7 @@ function SkrilyaLib:Window(config)
 	userInfoContent.Size = UDim2.new(1, 0, 1, 0)
 	userInfoContent.BackgroundTransparency = 1
 	userInfoContent.Parent = userInfo
-	CreatePadding(userInfoContent, 8, 10, 12, 12)
+	CreatePadding(userInfoContent, UI.Pad, UI.Pad + 2, UI.PadLarge, UI.PadLarge)
 	CreateList(userInfoContent, 3)
 
 	local hubNameLabel = Instance.new("TextLabel")
@@ -1015,53 +1078,6 @@ function SkrilyaLib:Window(config)
 	function Window:SetKeyTimer(expStr)
 		keyExpiration = expStr
 	end
-
-	-- Shrink sidebar to leave room for UserInfo
-	sidebar.Size = UDim2.new(sidebarScale, 0, 1, -56)
-
-	-- Topbar divider — subtle gradient line
-	local topDiv = Instance.new("Frame")
-	topDiv.Size = UDim2.new(1, 0, 0, 1)
-	topDiv.Position = UDim2.fromOffset(0, 46)
-	topDiv.BackgroundColor3 = t.Divider
-	topDiv.BackgroundTransparency = 0.3
-	topDiv.BorderSizePixel = 0
-	topDiv.Parent = mainFrame
-	registerThemed(topDiv, "BackgroundColor3", "Divider")
-
-	-- ══════════════════════════════
-	-- BODY CONTAINER
-	-- ══════════════════════════════
-	local body = Instance.new("Frame")
-	body.Name = "BodyContainer"
-	body.Size = UDim2.new(1, 0, 1, -47)
-	body.Position = UDim2.fromOffset(0, 47)
-	body.BackgroundTransparency = 1
-	body.BorderSizePixel = 0
-	body.Parent = mainFrame
-
-	-- ══════════════════════════════
-	-- SIDEBAR — refined with hover states
-	-- ══════════════════════════════
-	local sidebarScale = 0.22 -- ~22% of window width (MacLib uses 0.325)
-	local sidebar = Instance.new("ScrollingFrame")
-	sidebar.Name = "Sidebar"
-	sidebar.Size = UDim2.new(sidebarScale, 0, 1, 0)
-	sidebar.BackgroundColor3 = t.Secondary
-	sidebar.BorderSizePixel = 0
-	sidebar.ScrollBarThickness = 2
-	sidebar.ScrollBarImageColor3 = t.Accent
-	sidebar.ScrollBarImageTransparency = 0.6
-	sidebar.AutomaticCanvasSize = Enum.AutomaticSize.Y
-	sidebar.ScrollingDirection = Enum.ScrollingDirection.Y
-	sidebar.CanvasSize = UDim2.new(0, 0, 0, 0)
-	sidebar.Parent = body
-	CreateList(sidebar, 2)
-	CreatePadding(sidebar, UI.Pad, UI.Pad, UI.Pad, UI.Pad)
-	registerThemed(sidebar, "BackgroundColor3", "Secondary")
-
-	Window._sidebar = sidebar
-	Window._sidebarOrderCounter = 0
 
 	-- Sidebar divider
 	local sideDiv = Instance.new("Frame")
@@ -1302,7 +1318,7 @@ function SkrilyaLib:Window(config)
 		-- Sidebar button — with left indicator and hover
 		local tabBtn = Instance.new("TextButton")
 		tabBtn.Name = "Tab_" .. tabName
-		tabBtn.Size = UDim2.new(1, 0, 0, 32)
+		tabBtn.Size = UDim2.new(1, 0, 0, UI.ControlH)
 		tabBtn.BackgroundColor3 = t.Secondary
 		tabBtn.BackgroundTransparency = 1
 		tabBtn.Text = ""
@@ -1374,7 +1390,7 @@ function SkrilyaLib:Window(config)
 
 		local leftCol = Instance.new("Frame")
 		leftCol.Name = "Left"
-		leftCol.Size = UDim2.new(0.5, -6, 0, 0)
+		leftCol.Size = UDim2.new(0.5, -UI.ColGap, 0, 0)
 		leftCol.AutomaticSize = Enum.AutomaticSize.Y
 		leftCol.BackgroundTransparency = 1
 		leftCol.Parent = colsFrame
@@ -1382,8 +1398,8 @@ function SkrilyaLib:Window(config)
 
 		local rightCol = Instance.new("Frame")
 		rightCol.Name = "Right"
-		rightCol.Size = UDim2.new(0.5, -6, 0, 0)
-		rightCol.Position = UDim2.new(0.5, 6, 0, 0)
+		rightCol.Size = UDim2.new(0.5, -UI.ColGap, 0, 0)
+		rightCol.Position = UDim2.new(0.5, UI.ColGap, 0, 0)
 		rightCol.AutomaticSize = Enum.AutomaticSize.Y
 		rightCol.BackgroundTransparency = 1
 		rightCol.Parent = colsFrame
@@ -1524,7 +1540,7 @@ function SkrilyaLib:Window(config)
 			if sectionName ~= "" then
 				-- Section header with small accent underline
 				local secHdrContainer = Instance.new("Frame")
-				secHdrContainer.Size = UDim2.new(1, 0, 0, 28)
+				secHdrContainer.Size = UDim2.new(1, 0, 0, UI.InputH)
 				secHdrContainer.BackgroundTransparency = 1
 				secHdrContainer.LayoutOrder = 0
 				secHdrContainer.Parent = sec
@@ -1653,7 +1669,7 @@ function SkrilyaLib:Window(config)
 				frame.BorderSizePixel = 0
 				frame.LayoutOrder = elemOrder
 				frame.Parent = sec
-				CreatePadding(frame, 4, 4, 0, 0)
+				CreatePadding(frame, UI.ElemPadV, UI.ElemPadV, 0, 0)
 
 				-- Text container (drives auto height)
 				local textContainer = Instance.new("Frame")
@@ -1772,7 +1788,7 @@ function SkrilyaLib:Window(config)
 				frame.BorderSizePixel = 0
 				frame.LayoutOrder = elemOrder
 				frame.Parent = sec
-				CreatePadding(frame, 4, 8, 0, 0)
+				CreatePadding(frame, UI.ElemPadV, UI.Pad, 0, 0)
 
 				-- Top row: name + value
 				local topRow = Instance.new("Frame")
@@ -1824,12 +1840,12 @@ function SkrilyaLib:Window(config)
 				-- Track — 4px height, positioned below text
 				local trackContainer = Instance.new("Frame")
 				trackContainer.Size = UDim2.new(1, 0, 0, 14)
-				trackContainer.Position = UDim2.new(0, 0, 0, topRow.Size.Y.Offset + 4)
+				trackContainer.Position = UDim2.new(0, 0, 0, topRow.Size.Y.Offset + UI.ElemPadV)
 				trackContainer.BackgroundTransparency = 1
 				trackContainer.Parent = frame
 
 				local track = Instance.new("ImageLabel")
-				track.Size = UDim2.new(1, 0, 0, 6)
+				track.Size = UDim2.new(1, 0, 0, UI.TrackH)
 				track.AnchorPoint = Vector2.new(0, 0.5)
 				track.Position = UDim2.new(0, 0, 0.5, 0)
 				track.BackgroundTransparency = 1
@@ -1850,7 +1866,7 @@ function SkrilyaLib:Window(config)
 
 				-- Thumb — image-based
 				local thumb = Instance.new("ImageLabel")
-				thumb.Size = UDim2.fromOffset(14, 14)
+				thumb.Size = UDim2.fromOffset(UI.ThumbSize, UI.ThumbSize)
 				thumb.AnchorPoint = Vector2.new(0.5, 0.5)
 				thumb.Position = UDim2.new((obj.Value - mn) / math.max(mx - mn, 1), 0, 0.5, 0)
 				thumb.BackgroundTransparency = 1
@@ -1899,7 +1915,7 @@ function SkrilyaLib:Window(config)
 					if obj._locked then return end
 					sliding = true
 					-- Enlarge thumb while sliding
-					Tween(thumb, TI_FAST, {Size = UDim2.fromOffset(14, 14)})
+					Tween(thumb, TI_FAST, {Size = UDim2.fromOffset(UI.ThumbActiveSize, UI.ThumbActiveSize)})
 					onSlide(Mouse.X)
 				end)
 
@@ -1914,7 +1930,7 @@ function SkrilyaLib:Window(config)
 					if input.UserInputType == Enum.UserInputType.MouseButton1 and sliding then
 						sliding = false
 						-- Return thumb to normal
-						Tween(thumb, TI_FAST, {Size = UDim2.fromOffset(12, 12)})
+						Tween(thumb, TI_FAST, {Size = UDim2.fromOffset(UI.ThumbSize, UI.ThumbSize)})
 					end
 				end)
 				table.insert(_connections, slideEnd)
@@ -1931,7 +1947,7 @@ function SkrilyaLib:Window(config)
 				local allowNull = cfg.AllowNull or false
 				local hasSearch = cfg.Search or false
 				local hasDesc = cfg.Description and cfg.Description ~= ""
-				local headerH = hasDesc and 40 or 28
+				local headerH = hasDesc and (UI.ControlH + 12) or UI.ControlH
 				-- Multi-dropdown Value is ALWAYS a dict: {Name = true, Name2 = true}
 				-- This avoids the MacLib bug where Value=array but Callback=dict
 				local obj = {Value = cfg.Default or (multi and {} or nil)}
@@ -1991,8 +2007,8 @@ function SkrilyaLib:Window(config)
 				if hasSearch then
 					searchOffset = 30
 					local searchBg = Instance.new("Frame")
-					searchBg.Size = UDim2.new(1, -12, 0, 26)
-					searchBg.Position = UDim2.new(0, 6, 0, headerH + 4)
+					searchBg.Size = UDim2.new(1, -UI.PadLarge, 0, UI.InputH - 2)
+					searchBg.Position = UDim2.new(0, UI.ColGap, 0, headerH + UI.ElemPadV)
 					searchBg.BackgroundColor3 = t.Background
 					searchBg.BorderSizePixel = 0
 					CreateCorner(searchBg, UI.Radius)
@@ -2015,8 +2031,8 @@ function SkrilyaLib:Window(config)
 				end
 
 				local optionsContainer = Instance.new("Frame")
-				optionsContainer.Size = UDim2.new(1, -12, 0, 0)
-				optionsContainer.Position = UDim2.new(0, 6, 0, headerH + 4 + searchOffset)
+				optionsContainer.Size = UDim2.new(1, -UI.PadLarge, 0, 0)
+				optionsContainer.Position = UDim2.new(0, UI.ColGap, 0, headerH + UI.ElemPadV + searchOffset)
 				optionsContainer.AutomaticSize = Enum.AutomaticSize.Y
 				optionsContainer.BackgroundTransparency = 1
 				optionsContainer.Parent = frame
@@ -2063,7 +2079,7 @@ function SkrilyaLib:Window(config)
 				local function calcOpenHeight()
 					local filtered = getFilteredOptions()
 					local count = #filtered + (allowNull and not multi and 1 or 0)
-					return headerH + 6 + searchOffset + count * 30 + 8
+					return headerH + UI.Gap + searchOffset + count * (UI.InputH + 2) + UI.Pad
 				end
 
 				local function buildOptions()
@@ -2077,7 +2093,7 @@ function SkrilyaLib:Window(config)
 					if allowNull and not multi then
 						layoutIdx = layoutIdx + 1
 						local nullBtn = Instance.new("TextButton")
-						nullBtn.Size = UDim2.new(1, 0, 0, 28)
+						nullBtn.Size = UDim2.new(1, 0, 0, UI.InputH)
 						nullBtn.BackgroundColor3 = t.Background
 						nullBtn.BackgroundTransparency = 0.3
 						nullBtn.Text = "  None"
@@ -2105,7 +2121,7 @@ function SkrilyaLib:Window(config)
 					for _, opt in ipairs(filtered) do
 						layoutIdx = layoutIdx + 1
 						local optBtn = Instance.new("TextButton")
-						optBtn.Size = UDim2.new(1, 0, 0, 28)
+						optBtn.Size = UDim2.new(1, 0, 0, UI.InputH)
 						optBtn.BackgroundColor3 = t.Background
 						optBtn.BackgroundTransparency = 0.3
 						optBtn.Text = "  " .. tostring(opt)
@@ -2342,8 +2358,8 @@ function SkrilyaLib:Window(config)
 				frame.BorderSizePixel = 0
 				frame.LayoutOrder = elemOrder
 				frame.Parent = sec
-				CreatePadding(frame, 2, 2, 0, 0)
-				CreateList(frame, 4)
+				CreatePadding(frame, UI.ElemPadV, UI.ElemPadV, 0, 0)
+				CreateList(frame, UI.ElemPadV)
 
 				local lbl = Instance.new("TextLabel")
 				lbl.Size = UDim2.new(1, 0, 0, 16)
@@ -2373,7 +2389,7 @@ function SkrilyaLib:Window(config)
 				end
 
 				local inputBg = Instance.new("Frame")
-				inputBg.Size = UDim2.new(1, 0, 0, 26)
+				inputBg.Size = UDim2.new(1, 0, 0, UI.InputH)
 				inputBg.BackgroundColor3 = t.Background
 				inputBg.BorderSizePixel = 0
 				inputBg.LayoutOrder = 3
@@ -2382,8 +2398,8 @@ function SkrilyaLib:Window(config)
 				registerThemed(inputBg, "BackgroundColor3", "Background")
 
 				local textBox = Instance.new("TextBox")
-				textBox.Size = UDim2.new(1, -14, 1, 0)
-				textBox.Position = UDim2.fromOffset(7, 0)
+				textBox.Size = UDim2.new(1, -UI.Pad * 2, 1, 0)
+				textBox.Position = UDim2.fromOffset(UI.Pad, 0)
 				textBox.BackgroundTransparency = 1
 				textBox.Text = obj.Value
 				textBox.PlaceholderText = cfg.Placeholder or ""
@@ -2437,7 +2453,7 @@ function SkrilyaLib:Window(config)
 				frame.BorderSizePixel = 0
 				frame.LayoutOrder = elemOrder
 				frame.Parent = sec
-				CreatePadding(frame, 4, 4, 0, 0)
+				CreatePadding(frame, UI.ElemPadV, UI.ElemPadV, 0, 0)
 
 				local textContainer = Instance.new("Frame")
 				textContainer.Size = UDim2.new(1, -64, 0, 0)
@@ -2475,7 +2491,7 @@ function SkrilyaLib:Window(config)
 
 				-- Keybind button — AnchorPoint centered
 				local keyBtn = Instance.new("TextButton")
-				keyBtn.Size = UDim2.fromOffset(50, 22)
+				keyBtn.Size = UDim2.fromOffset(50, UI.SmallH + 2)
 				keyBtn.AnchorPoint = Vector2.new(1, 0.5)
 				keyBtn.Position = UDim2.new(1, 0, 0.5, 0)
 				keyBtn.BackgroundColor3 = t.Secondary
@@ -2552,10 +2568,10 @@ function SkrilyaLib:Window(config)
 				frame.BorderSizePixel = 0
 				frame.LayoutOrder = elemOrder
 				frame.Parent = sec
-				CreatePadding(frame, 4, 4, 0, 0)
+				CreatePadding(frame, UI.ElemPadV, UI.ElemPadV, 0, 0)
 
 				local lbl = Instance.new("TextLabel")
-				lbl.Size = UDim2.new(1, -36, 0, 16)
+				lbl.Size = UDim2.new(1, -(UI.PreviewSize + 16), 0, 16)
 				lbl.BackgroundTransparency = 1
 				lbl.Text = cfg.Name or ""
 				lbl.TextColor3 = t.TextPrimary
@@ -2567,7 +2583,7 @@ function SkrilyaLib:Window(config)
 
 				-- Color preview — AnchorPoint centered
 				local preview = Instance.new("Frame")
-				preview.Size = UDim2.fromOffset(20, 20)
+				preview.Size = UDim2.fromOffset(UI.PreviewSize, UI.PreviewSize)
 				preview.AnchorPoint = Vector2.new(1, 0.5)
 				preview.Position = UDim2.new(1, 0, 0.5, 0)
 				preview.BackgroundColor3 = obj.Value
@@ -2602,13 +2618,14 @@ function SkrilyaLib:Window(config)
 					h, s, v = Color3.toHSV(obj.Value)
 
 					panel = Instance.new("Frame")
-					panel.Size = UDim2.fromOffset(210, 210)
+					local panelW, panelH = 210, 210
+					panel.Size = UDim2.fromOffset(panelW, panelH)
 					-- Anchor to preview button, not frame
 					local previewAbsX = preview.AbsolutePosition.X - mainFrame.AbsolutePosition.X
 					local previewAbsY = preview.AbsolutePosition.Y - mainFrame.AbsolutePosition.Y
 					-- Position below the preview, clamped to window
-					local panelX = math.clamp(previewAbsX - 180, 10, mainFrame.AbsoluteSize.X - 220)
-					local panelY = math.clamp(previewAbsY + 28, 10, mainFrame.AbsoluteSize.Y - 220)
+					local panelX = math.clamp(previewAbsX - panelW + 30, UI.Pad, mainFrame.AbsoluteSize.X - panelW - UI.Pad)
+					local panelY = math.clamp(previewAbsY + UI.InputH, UI.Pad, mainFrame.AbsoluteSize.Y - panelH - UI.Pad)
 					panel.Position = UDim2.fromOffset(panelX, panelY)
 					panel.BackgroundColor3 = t.Secondary
 					panel.BorderSizePixel = 0
@@ -2917,7 +2934,7 @@ function SkrilyaLib:Window(config)
 				container.Parent = sec
 
 				local header = Instance.new("TextButton")
-				header.Size = UDim2.new(1, 0, 0, 28)
+				header.Size = UDim2.new(1, 0, 0, UI.InputH)
 				header.BackgroundColor3 = t.Secondary
 				header.BackgroundTransparency = 0.7
 				header.BorderSizePixel = 0
@@ -2927,7 +2944,7 @@ function SkrilyaLib:Window(config)
 				header.Parent = container
 
 				local arrow = Instance.new("TextLabel")
-				arrow.Size = UDim2.fromOffset(16, 30)
+				arrow.Size = UDim2.fromOffset(16, UI.InputH)
 				arrow.Position = UDim2.fromOffset(8, 0)
 				arrow.BackgroundTransparency = 1
 				arrow.Text = isExpanded and "▼" or "▶"
@@ -2937,7 +2954,7 @@ function SkrilyaLib:Window(config)
 				arrow.Parent = header
 
 				local menuLbl = Instance.new("TextLabel")
-				menuLbl.Size = UDim2.new(1, -30, 0, 30)
+				menuLbl.Size = UDim2.new(1, -30, 0, UI.InputH)
 				menuLbl.Position = UDim2.fromOffset(24, 0)
 				menuLbl.BackgroundTransparency = 1
 				menuLbl.Text = menuName
@@ -2955,8 +2972,8 @@ function SkrilyaLib:Window(config)
 				menuContent.Visible = isExpanded
 				menuContent.LayoutOrder = 1
 				menuContent.Parent = container
-				CreateList(menuContent, 5)
-				CreatePadding(menuContent, 4, 0, 0, 0)
+				CreateList(menuContent, UI.Gap)
+				CreatePadding(menuContent, UI.ElemPadV, 0, 0, 0)
 
 				header.MouseButton1Click:Connect(function()
 					isExpanded = not isExpanded
@@ -3013,7 +3030,7 @@ function SkrilyaLib:Window(config)
 				local nObj = {Value = kcfg.Default or Enum.KeyCode.Unknown}
 
 				local kb = Instance.new("TextButton")
-				kb.Size = UDim2.fromOffset(28, 20)
+				kb.Size = UDim2.fromOffset(UI.InputH, UI.SmallH)
 				kb.Position = UDim2.new(1, -84, 0.5, -10)
 				kb.BackgroundColor3 = t.Secondary
 				kb.Text = nObj.Value and nObj.Value.Name or "None"
@@ -3070,7 +3087,7 @@ function SkrilyaLib:Window(config)
 				local nObj = {Value = ccfg.Default or Color3.new(1, 0, 0)}
 
 				local cp = Instance.new("Frame")
-				cp.Size = UDim2.fromOffset(18, 18)
+				cp.Size = UDim2.fromOffset(UI.SmallH - 2, UI.SmallH - 2)
 				cp.Position = UDim2.new(1, -106, 0.5, -9)
 				cp.BackgroundColor3 = nObj.Value
 				cp.BorderSizePixel = 0
