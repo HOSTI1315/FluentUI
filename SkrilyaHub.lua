@@ -112,7 +112,7 @@ end
 local Themes = {
 	Dark = {
 		Background = Color3.fromRGB(14, 14, 16),         -- main window bg (deeper)
-		Secondary = Color3.fromRGB(26, 26, 30),          -- sidebar, sections (+4 contrast)
+		Secondary = Color3.fromRGB(30, 30, 34),          -- sections as proper cards
 		Accent = Color3.fromRGB(98, 112, 255),
 		TextPrimary = Color3.fromRGB(255, 255, 255),     -- transparency 0.1
 		TextSecondary = Color3.fromRGB(255, 255, 255),   -- transparency 0.5
@@ -126,7 +126,7 @@ local Themes = {
 		InputBg = Color3.fromRGB(30, 30, 30),
 		Border = Color3.fromRGB(255, 255, 255),          -- used with transparency ~0.88
 		Font = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium),
-		FontBold = Font.new("rbxassetid://12187365364", Enum.FontWeight.SemiBold),
+		FontBold = Font.new("rbxassetid://12187365364", Enum.FontWeight.Bold),
 		FontSemibold = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium),
 	},
 	Light = {
@@ -145,7 +145,7 @@ local Themes = {
 		InputBg = Color3.fromRGB(235, 235, 240),
 		Border = Color3.fromRGB(0, 0, 0),                -- used with transparency ~0.88
 		Font = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium),
-		FontBold = Font.new("rbxassetid://12187365364", Enum.FontWeight.SemiBold),
+		FontBold = Font.new("rbxassetid://12187365364", Enum.FontWeight.Bold),
 		FontSemibold = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium),
 	},
 }
@@ -1753,9 +1753,10 @@ function SkrilyaLib:Window(config)
 			sec.BorderSizePixel = 0
 			sec.LayoutOrder = sectionOrder
 			CreateCorner(sec, UI.Radius)
-			-- Hairline border — separates section from bg without heavy weight.
-			-- 0.92 transparency ≈ alpha 0.08, same as CSS border-rgba(255,255,255,0.08)
-			CreateStroke(sec, Color3.fromRGB(255, 255, 255), 1, 0.92)
+			-- Hairline border — separates section from bg. 0.85 transparency
+			-- ≈ alpha 0.15 — on deeper Secondary(30,30,34) this reads as a
+			-- proper card edge even without blur.
+			CreateStroke(sec, Color3.fromRGB(255, 255, 255), 1, 0.85)
 			CreatePadding(sec, UI.PadLarge, UI.PadLarge, UI.PadLarge, UI.PadLarge)
 			CreateList(sec, UI.Gap)
 			sec.Parent = parent
@@ -1780,14 +1781,17 @@ function SkrilyaLib:Window(config)
 				secHdr.Parent = secHdrContainer
 				registerThemed(secHdr, "TextColor3", "TextPrimary")
 
-				-- Accent underline: brighter (fully opaque) and wider, matching
-				-- the `.sec-underline` in the HTML mockup (22px, accent, 0.8 alpha)
+				-- Accent underline: 32×2 bar, fully opaque accent.
+				-- BackgroundColor3 is set BEFORE parenting to avoid a 1-frame
+				-- white flash; tagAccent still registers it so SetAccent can
+				-- re-tint later. CreateCorner dropped — at 2px height a 1px
+				-- radius is noise.
 				local secLine = Instance.new("Frame")
-				secLine.Size = UDim2.fromOffset(28, 2)
-				secLine.Position = UDim2.fromOffset(0, 24)
+				secLine.Size = UDim2.fromOffset(32, 2)
+				secLine.Position = UDim2.fromOffset(0, 22)
+				secLine.BackgroundColor3 = theme().Accent
 				secLine.BackgroundTransparency = 0
 				secLine.BorderSizePixel = 0
-				CreateCorner(secLine, 1)
 				secLine.Parent = secHdrContainer
 				tagAccent(secLine, "BackgroundColor3")
 			end
