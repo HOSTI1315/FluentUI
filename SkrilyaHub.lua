@@ -58,10 +58,10 @@ end)
 
 -- // 2b. DESIGN SYSTEM (strict grid: 4/8/12/16)
 local UI = {
-	Pad = 8,          -- base padding
-	PadLarge = 12,    -- section padding
-	Gap = 6,          -- gap between elements in section
-	GapLarge = 12,    -- gap between sections
+	Pad = 10,         -- base padding
+	PadLarge = 14,    -- section padding
+	Gap = 8,          -- gap between elements in section
+	GapLarge = 16,    -- gap between sections
 	Radius = 8,       -- default corner radius
 	RadiusLarge = 12, -- window/section radius
 	ControlH = 32,    -- unified control height (buttons, inputs, dropdown headers)
@@ -111,8 +111,8 @@ end
 -- // 3. THEMES — simplified: 2 background levels only
 local Themes = {
 	Dark = {
-		Background = Color3.fromRGB(15, 15, 15),        -- main window bg
-		Secondary = Color3.fromRGB(22, 22, 22),          -- sidebar, sections
+		Background = Color3.fromRGB(14, 14, 16),         -- main window bg (deeper)
+		Secondary = Color3.fromRGB(26, 26, 30),          -- sidebar, sections (+4 contrast)
 		Accent = Color3.fromRGB(98, 112, 255),
 		TextPrimary = Color3.fromRGB(255, 255, 255),     -- transparency 0.1
 		TextSecondary = Color3.fromRGB(255, 255, 255),   -- transparency 0.5
@@ -130,8 +130,8 @@ local Themes = {
 		FontSemibold = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium),
 	},
 	Light = {
-		Background = Color3.fromRGB(245, 245, 248),
-		Secondary = Color3.fromRGB(255, 255, 255),
+		Background = Color3.fromRGB(243, 243, 246),
+		Secondary = Color3.fromRGB(253, 253, 254),       -- crisp white sections on slight-gray bg
 		Accent = Color3.fromRGB(88, 101, 242),
 		TextPrimary = Color3.fromRGB(0, 0, 0),
 		TextSecondary = Color3.fromRGB(0, 0, 0),
@@ -809,6 +809,14 @@ function SkrilyaLib:Window(config)
 	local keyExpiration = config.KeyExpiration
 	local notifyOnError = config.NotifyOnCallbackError or false
 
+	-- UserInfo customization. All optional; defaults produce the current
+	-- "winTitle + auto-initials" look from the mockup.
+	local userInfoCfg = config.UserInfo or {}
+	local userInfoName = userInfoCfg.Name or winTitle
+	local userInfoSubtitle = userInfoCfg.Subtitle  -- nil = just show name
+	local userInfoInitials = userInfoCfg.Initials  -- nil = auto from Name
+	local userInfoShowAvatar = userInfoCfg.ShowAvatar ~= false  -- true by default
+
 	if winTheme and Themes[winTheme] then
 		_currentTheme = winTheme
 		t = theme()
@@ -851,6 +859,48 @@ function SkrilyaLib:Window(config)
 		uiScale.Scale = 0.92
 		uiScale.Parent = mainFrame
 		Tween(uiScale, TI_SPRING, {Scale = 1})
+	end)
+
+	-- Outer drop shadow — one 9-slice ImageLabel with the stock Roblox
+	-- drop-shadow texture (used by Fluent, Rayfield, Rayfield-Interface-Suite
+	-- etc). Cleaner and softer than stacked Frames; cost is one draw call.
+	-- Sits behind mainFrame via ZIndex and follows its position on drag.
+	local shadow = Instance.new("ImageLabel")
+	shadow.Name = "_MainShadow"
+	shadow.BackgroundTransparency = 1
+	shadow.BorderSizePixel = 0
+	shadow.Image = "rbxassetid://6015897843"
+	shadow.ImageColor3 = Color3.new(0, 0, 0)
+	shadow.ImageTransparency = 0.35
+	shadow.ScaleType = Enum.ScaleType.Slice
+	shadow.SliceCenter = Rect.new(49, 49, 450, 450)
+	shadow.ZIndex = 0  -- below mainFrame (default ZIndex = 1)
+	local shadowPad = 40
+	shadow.Size = UDim2.new(
+		mainFrame.Size.X.Scale, mainFrame.Size.X.Offset + shadowPad * 2,
+		mainFrame.Size.Y.Scale, mainFrame.Size.Y.Offset + shadowPad * 2
+	)
+	shadow.Position = UDim2.new(
+		mainFrame.Position.X.Scale, mainFrame.Position.X.Offset - shadowPad,
+		mainFrame.Position.Y.Scale, mainFrame.Position.Y.Offset - shadowPad
+	)
+	shadow.Parent = gui
+
+	-- Sync shadow to mainFrame position/size/visibility
+	mainFrame:GetPropertyChangedSignal("Position"):Connect(function()
+		shadow.Position = UDim2.new(
+			mainFrame.Position.X.Scale, mainFrame.Position.X.Offset - shadowPad,
+			mainFrame.Position.Y.Scale, mainFrame.Position.Y.Offset - shadowPad
+		)
+	end)
+	mainFrame:GetPropertyChangedSignal("Size"):Connect(function()
+		shadow.Size = UDim2.new(
+			mainFrame.Size.X.Scale, mainFrame.Size.X.Offset + shadowPad * 2,
+			mainFrame.Size.Y.Scale, mainFrame.Size.Y.Offset + shadowPad * 2
+		)
+	end)
+	mainFrame:GetPropertyChangedSignal("Visible"):Connect(function()
+		shadow.Visible = mainFrame.Visible
 	end)
 
 	-- Drop shadow layers
@@ -1029,38 +1079,116 @@ function SkrilyaLib:Window(config)
 	userInfo.Parent = body
 	registerThemed(userInfo, "BackgroundColor3", "Secondary")
 
+	-- Top divider — visually separates user info from the scrolling tab list
+	-- above it. Matches the mockup's sidebar-footer seam.
+	local userInfoDiv = Instance.new("Frame")
+	userInfoDiv.Size = UDim2.new(1, -UI.PadLarge * 2, 0, 1)
+	userInfoDiv.Position = UDim2.new(0, UI.PadLarge, 0, 0)
+	userInfoDiv.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	userInfoDiv.BackgroundTransparency = 0.9
+	userInfoDiv.BorderSizePixel = 0
+	userInfoDiv.Parent = userInfo
+
 	-- Content: hub name + key timer stacked (no divider — bg difference is enough)
 	local userInfoContent = Instance.new("Frame")
 	userInfoContent.Size = UDim2.new(1, 0, 1, 0)
 	userInfoContent.BackgroundTransparency = 1
 	userInfoContent.Parent = userInfo
 	CreatePadding(userInfoContent, UI.Pad, UI.Pad + 2, UI.PadLarge, UI.PadLarge)
-	CreateList(userInfoContent, 3)
+
+	-- Two-column layout: accent avatar (26×26 square w/ initials) on the left,
+	-- name+(optional subtitle)+key timer stacked on the right. Matches the
+	-- "SK / Skrilya Premium" block in the target design. Both avatar and
+	-- subtitle are opt-out/opt-in via cfg.UserInfo.
+	local textStackX = 0
+	if userInfoShowAvatar then
+		local avatarSize = 26
+		local avatar = Instance.new("Frame")
+		avatar.Name = "Avatar"
+		avatar.AnchorPoint = Vector2.new(0, 0.5)
+		avatar.Position = UDim2.new(0, 0, 0.5, 0)
+		avatar.Size = UDim2.fromOffset(avatarSize, avatarSize)
+		avatar.BorderSizePixel = 0
+		CreateCorner(avatar, 6)
+		avatar.Parent = userInfoContent
+		tagAccent(avatar, "BackgroundColor3")
+
+		-- Initials — custom if passed, else derived from userInfoName
+		local initials = userInfoInitials
+		if not initials then
+			initials = ""
+			for word in tostring(userInfoName):gmatch("%S+") do
+				if #initials < 2 then initials = initials .. word:sub(1, 1):upper() end
+			end
+			if initials == "" then initials = "S" end
+		end
+
+		local avatarLbl = Instance.new("TextLabel")
+		avatarLbl.Size = UDim2.new(1, 0, 1, 0)
+		avatarLbl.BackgroundTransparency = 1
+		avatarLbl.Text = initials
+		avatarLbl.TextColor3 = t.TextPrimary
+		avatarLbl.FontFace = t.FontBold
+		avatarLbl.TextSize = 11
+		avatarLbl.TextXAlignment = Enum.TextXAlignment.Center
+		avatarLbl.TextYAlignment = Enum.TextYAlignment.Center
+		avatarLbl.Parent = avatar
+		textStackX = avatarSize + 8
+	end
+
+	-- Text stack sits to the right of the avatar (or at column start if no avatar)
+	local textStack = Instance.new("Frame")
+	textStack.Name = "TextStack"
+	textStack.AnchorPoint = Vector2.new(0, 0.5)
+	textStack.Position = UDim2.new(0, textStackX, 0.5, 0)
+	textStack.Size = UDim2.new(1, -textStackX, 1, 0)
+	textStack.BackgroundTransparency = 1
+	textStack.Parent = userInfoContent
+	CreateList(textStack, 2)
 
 	local hubNameLabel = Instance.new("TextLabel")
-	hubNameLabel.Size = UDim2.new(1, 0, 0, 16)
+	hubNameLabel.Size = UDim2.new(1, 0, 0, 15)
 	hubNameLabel.BackgroundTransparency = 1
-	hubNameLabel.Text = winTitle
+	hubNameLabel.Text = userInfoName
 	hubNameLabel.TextColor3 = t.TextPrimary
-	hubNameLabel.TextTransparency = 0.2
+	hubNameLabel.TextTransparency = 0.05
 	hubNameLabel.FontFace = FontSemibold()
-	hubNameLabel.TextSize = 13
+	hubNameLabel.TextSize = 12
 	hubNameLabel.TextXAlignment = Enum.TextXAlignment.Left
+	hubNameLabel.TextTruncate = Enum.TextTruncate.AtEnd
 	hubNameLabel.LayoutOrder = 1
-	hubNameLabel.Parent = userInfoContent
+	hubNameLabel.Parent = textStack
+	registerThemed(hubNameLabel, "TextColor3", "TextPrimary")
+
+	-- Optional subtitle (e.g., "Premium" tier label under the name)
+	if userInfoSubtitle and userInfoSubtitle ~= "" then
+		local subLbl = Instance.new("TextLabel")
+		subLbl.Size = UDim2.new(1, 0, 0, 11)
+		subLbl.BackgroundTransparency = 1
+		subLbl.Text = userInfoSubtitle
+		subLbl.TextColor3 = t.TextDimmed
+		subLbl.TextTransparency = 0.3
+		subLbl.FontFace = t.Font
+		subLbl.TextSize = 10
+		subLbl.TextXAlignment = Enum.TextXAlignment.Left
+		subLbl.TextTruncate = Enum.TextTruncate.AtEnd
+		subLbl.LayoutOrder = 2
+		subLbl.Parent = textStack
+		registerThemed(subLbl, "TextColor3", "TextDimmed")
+	end
 
 	if keyExpiration then
-		-- Key timer row: dot + text
+		-- Key timer row: dot + text, sits below hub name inside textStack
 		local keyRow = Instance.new("Frame")
-		keyRow.Size = UDim2.new(1, 0, 0, 14)
+		keyRow.Size = UDim2.new(1, 0, 0, 12)
 		keyRow.BackgroundTransparency = 1
 		keyRow.LayoutOrder = 2
-		keyRow.Parent = userInfoContent
+		keyRow.Parent = textStack
 
 		keyDot = Instance.new("Frame")
 		keyDot.Name = "KeyDot"
-		keyDot.Size = UDim2.fromOffset(6, 6)
-		keyDot.Position = UDim2.fromOffset(0, 4)
+		keyDot.Size = UDim2.fromOffset(5, 5)
+		keyDot.Position = UDim2.fromOffset(0, 3)
 		keyDot.BackgroundColor3 = t.Success
 		keyDot.BorderSizePixel = 0
 		CreateCorner(keyDot, 3)
@@ -1068,13 +1196,13 @@ function SkrilyaLib:Window(config)
 
 		keyLabel = Instance.new("TextLabel")
 		keyLabel.Name = "KeyExpiration"
-		keyLabel.Size = UDim2.new(1, -12, 0, 14)
-		keyLabel.Position = UDim2.fromOffset(10, 0)
+		keyLabel.Size = UDim2.new(1, -10, 1, 0)
+		keyLabel.Position = UDim2.fromOffset(9, 0)
 		keyLabel.BackgroundTransparency = 1
 		keyLabel.Text = ""
 		keyLabel.TextColor3 = t.TextDimmed
 		keyLabel.FontFace = FontRegular()
-		keyLabel.TextSize = 11
+		keyLabel.TextSize = 10
 		keyLabel.TextXAlignment = Enum.TextXAlignment.Left
 		keyLabel.Parent = keyRow
 
@@ -1115,13 +1243,13 @@ function SkrilyaLib:Window(config)
 		keyExpiration = expStr
 	end
 
-	-- Sidebar divider
+	-- Sidebar divider — slightly more visible to separate sidebar column
 	local sideDiv = Instance.new("Frame")
 	sideDiv.Size = UDim2.new(0, 1, 1, 0)
 	sideDiv.AnchorPoint = Vector2.new(1, 0)
 	sideDiv.Position = UDim2.new(sidebarScale, 0, 0, 0)
 	sideDiv.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-	sideDiv.BackgroundTransparency = 0.9
+	sideDiv.BackgroundTransparency = 0.85
 	sideDiv.BorderSizePixel = 0
 	sideDiv.Parent = body
 
@@ -1401,17 +1529,19 @@ function SkrilyaLib:Window(config)
 		local tabName = cfg.Name or "Tab"
 		local Tab = {_sections = {}}
 
-		-- Sidebar button — with left indicator and hover
+		-- Sidebar button — with left indicator and hover.
+		-- Color is always accent; transparency drives visibility (1 = hidden,
+		-- 0.85 = active pill, 0.7 = hover). tagAccent keeps it live on SetAccent.
 		local tabBtn = Instance.new("TextButton")
 		tabBtn.Name = "Tab_" .. tabName
 		tabBtn.Size = UDim2.new(1, 0, 0, UI.ControlH)
-		tabBtn.BackgroundColor3 = t.Secondary
 		tabBtn.BackgroundTransparency = 1
 		tabBtn.Text = ""
 		tabBtn.BorderSizePixel = 0
 		tabBtn.LayoutOrder = tabOrder
 		CreateCorner(tabBtn, UI.Radius)
 		tabBtn.Parent = sidebar
+		tagAccent(tabBtn, "BackgroundColor3")
 
 		-- Tab name label (offset for indicator)
 		local tabLbl = Instance.new("TextLabel")
@@ -1516,7 +1646,10 @@ function SkrilyaLib:Window(config)
 				tab._content.Visible = isActive
 
 				if isActive then
-					Tween(tab._btn, TI_FAST, {BackgroundTransparency = 0.5})
+					-- Subtle accent fill so the active tab is obviously selected.
+					-- Low opacity (0.85) keeps it from screaming — matches the
+					-- mockup's "pill" look. Color is driven by tagAccent above.
+					Tween(tab._btn, TI_FAST, {BackgroundTransparency = 0.85})
 					Tween(tab._tabLbl, TI_FAST, {TextColor3 = t.TextPrimary})
 					tab._tabLbl.FontFace = t.FontBold
 					Tween(tab._indicator, TI_MED, {BackgroundTransparency = 0})
@@ -1620,8 +1753,10 @@ function SkrilyaLib:Window(config)
 			sec.BorderSizePixel = 0
 			sec.LayoutOrder = sectionOrder
 			CreateCorner(sec, UI.Radius)
-			-- NO UIStroke — rely on bg color difference for depth
-			CreatePadding(sec, UI.Pad, UI.Pad, UI.Pad, UI.Pad)
+			-- Hairline border — separates section from bg without heavy weight.
+			-- 0.92 transparency ≈ alpha 0.08, same as CSS border-rgba(255,255,255,0.08)
+			CreateStroke(sec, Color3.fromRGB(255, 255, 255), 1, 0.92)
+			CreatePadding(sec, UI.PadLarge, UI.PadLarge, UI.PadLarge, UI.PadLarge)
 			CreateList(sec, UI.Gap)
 			sec.Parent = parent
 			registerThemed(sec, "BackgroundColor3", "Secondary")
@@ -1645,15 +1780,16 @@ function SkrilyaLib:Window(config)
 				secHdr.Parent = secHdrContainer
 				registerThemed(secHdr, "TextColor3", "TextPrimary")
 
-				-- Small accent line under header
+				-- Accent underline: brighter (fully opaque) and wider, matching
+				-- the `.sec-underline` in the HTML mockup (22px, accent, 0.8 alpha)
 				local secLine = Instance.new("Frame")
-				secLine.Size = UDim2.fromOffset(24, 2)
-				secLine.Position = UDim2.fromOffset(0, 22)
-				secLine.BackgroundColor3 = t.Accent
-				secLine.BackgroundTransparency = 0.3
+				secLine.Size = UDim2.fromOffset(28, 2)
+				secLine.Position = UDim2.fromOffset(0, 24)
+				secLine.BackgroundTransparency = 0
 				secLine.BorderSizePixel = 0
 				CreateCorner(secLine, 1)
 				secLine.Parent = secHdrContainer
+				tagAccent(secLine, "BackgroundColor3")
 			end
 
 			local Section = {}
@@ -2508,11 +2644,15 @@ function SkrilyaLib:Window(config)
 			function Section:Button(cfg)
 				elemOrder = elemOrder + 1
 				local hasDesc = cfg.Description and cfg.Description ~= ""
+				-- Variant system: 'primary' (default, solid accent gradient) vs
+				-- 'ghost' (transparent bg, accent border + text). Mirrors the
+				-- CSS `.btn-accent` / `.btn-ghost` split from the HTML mockup.
+				local variant = cfg.Variant or "primary"
+				local isGhost = (variant == "ghost")
 
 				local btn = Instance.new("TextButton")
 				btn.Name = "Btn_" .. (cfg.Name or "")
 				btn.Size = UDim2.new(1, 0, 0, hasDesc and (UI.ControlH + 16) or UI.ControlH)
-				btn.BackgroundTransparency = 0.05
 				btn.Text = ""
 				btn.AutoButtonColor = false
 				btn.BorderSizePixel = 0
@@ -2520,7 +2660,32 @@ function SkrilyaLib:Window(config)
 				btn.ClipsDescendants = true
 				CreateCorner(btn, UI.Radius)
 				btn.Parent = sec
-				tagAccent(btn, "BackgroundColor3")
+
+				if isGhost then
+					-- Ghost (neutral secondary): subtle white-tinted bg + hairline
+					-- white border + primary-text color. Matches CSS `.btn-ghost`
+					-- from the mockup: rgba(255,255,255,0.06) bg, var(--border)
+					-- outline, var(--text) color. No accent involvement.
+					btn.BackgroundColor3 = t.Secondary
+					btn.BackgroundTransparency = 0.3
+					registerThemed(btn, "BackgroundColor3", "Secondary")
+					CreateStroke(btn, Color3.fromRGB(255, 255, 255), 1, 0.88)
+				else
+					-- Primary: solid accent with subtle top-to-bottom gradient
+					-- and a tiny inset highlight — matches CSS
+					-- `linear-gradient(180deg, accent, accent-2) +
+					--  inset 0 1px 0 rgba(255,255,255,0.2)`.
+					btn.BackgroundTransparency = 0.05
+					tagAccent(btn, "BackgroundColor3")
+					local grad = Instance.new("UIGradient")
+					grad.Color = ColorSequence.new(Color3.new(1, 1, 1))
+					grad.Transparency = NumberSequence.new({
+						NumberSequenceKeypoint.new(0, 0.75),  -- brighter top
+						NumberSequenceKeypoint.new(1, 1.0),   -- clean bottom
+					})
+					grad.Rotation = 90
+					grad.Parent = btn
+				end
 
 				local nameLbl = Instance.new("TextLabel")
 				nameLbl.Size = UDim2.new(1, -UI.Pad * 2, 0, 16)
@@ -2529,10 +2694,16 @@ function SkrilyaLib:Window(config)
 				if not hasDesc then nameLbl.Position = UDim2.new(0, UI.Pad, 0.5, 0) end
 				nameLbl.BackgroundTransparency = 1
 				nameLbl.Text = cfg.Name or "Button"
+				-- Both variants use TextPrimary per the mockup:
+				-- .btn-accent → color: white (over accent bg)
+				-- .btn-ghost  → color: var(--text) (white on near-transparent bg)
 				nameLbl.TextColor3 = t.TextPrimary
+				registerThemed(nameLbl, "TextColor3", "TextPrimary")
 				nameLbl.FontFace = t.FontBold
 				nameLbl.TextSize = 13
-				nameLbl.TextXAlignment = Enum.TextXAlignment.Left
+				-- Center primary CTA text (no desc) — matches mockup .btn-accent.
+				-- Keep left-aligned when there's a description (readable stack).
+				nameLbl.TextXAlignment = (hasDesc and Enum.TextXAlignment.Left) or Enum.TextXAlignment.Center
 				nameLbl.Parent = btn
 
 				if hasDesc then
@@ -2550,8 +2721,12 @@ function SkrilyaLib:Window(config)
 					descLbl.Parent = btn
 				end
 
-				btn.MouseEnter:Connect(function() Tween(btn, TI_FAST, {BackgroundTransparency = 0}) end)
-				btn.MouseLeave:Connect(function() Tween(btn, TI_FAST, {BackgroundTransparency = 0.05}) end)
+				-- Hover/leave transitions. Both variants subtly intensify on hover.
+				local baseTrans = isGhost and 0.3 or 0.05
+				local hoverTrans = isGhost and 0.15 or 0
+				btn.MouseEnter:Connect(function() Tween(btn, TI_FAST, {BackgroundTransparency = hoverTrans}) end)
+				btn.MouseLeave:Connect(function() Tween(btn, TI_FAST, {BackgroundTransparency = baseTrans}) end)
+
 				btn.MouseButton1Click:Connect(_sd(function()
 					RippleEffect(btn, Vector2.new(Mouse.X, Mouse.Y))
 					safeCallback(cfg.Callback)
@@ -3803,10 +3978,11 @@ function SkrilyaLib:Window(config)
 		for _, conn in ipairs(_connections) do pcall(function() conn:Disconnect() end) end
 		for _, thread in ipairs(_threads) do pcall(function() task.cancel(thread) end) end
 		if _autoSaveTask then pcall(function() task.cancel(_autoSaveTask) end) end
-		-- Remove shadow frames
+		-- Remove shadow frames (old _Shadow/_Shadow2 + new _MainShadow)
 		pcall(function()
 			for _, child in ipairs(gui:GetChildren()) do
-				if child.Name == "_Shadow" or child.Name == "_Shadow2" then
+				local n = child.Name
+				if n == "_Shadow" or n == "_Shadow2" or n == "_MainShadow" then
 					child:Destroy()
 				end
 			end
